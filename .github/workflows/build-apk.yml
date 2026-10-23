@@ -15,6 +15,8 @@ concurrency:
 jobs:
   android:
     runs-on: ubuntu-latest
+    env:
+      HAS_RELEASE_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -48,7 +50,7 @@ jobs:
         run: ./gradlew --no-daemon assembleDebug
 
       - name: Restore release keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_RELEASE_KEYSTORE == 'true' }}
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
@@ -56,7 +58,7 @@ jobs:
           chmod 600 "$RUNNER_TEMP/release-keystore.jks"
 
       - name: Build signed release APK
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_RELEASE_KEYSTORE == 'true' }}
         working-directory: android
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release-keystore.jks
@@ -81,7 +83,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload release APK
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_RELEASE_KEYSTORE == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: Medya-release-apk
