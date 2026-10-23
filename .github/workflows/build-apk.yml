@@ -71,8 +71,10 @@ jobs:
         run: |
           SHA="${GITHUB_SHA::7}"
           cp android/app/build/outputs/apk/debug/app-debug.apk "Medya-debug-$SHA.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk Medya-latest.apk
           if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
             cp android/app/build/outputs/apk/release/app-release.apk "Medya-release-$SHA.apk"
+            cp android/app/build/outputs/apk/release/app-release.apk Medya-release-latest.apk
           fi
 
       - name: Upload debug APK
@@ -96,6 +98,18 @@ jobs:
           git tag --force latest "$GITHUB_SHA"
           git push --force origin refs/tags/latest
 
+      - name: Remove stale release assets
+        if: ${{ github.ref == 'refs/heads/main' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for asset in $(gh release view latest --json assets --jq '.assets[].name' 2>/dev/null || true); do
+            case "$asset" in
+              Medya-latest.apk|Medya-release-latest.apk) ;;
+              *) gh release delete-asset latest "$asset" -y || true ;;
+            esac
+          done
+
       - name: Publish APK to rolling prerelease
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: softprops/action-gh-release@v2
@@ -105,5 +119,5 @@ jobs:
           prerelease: true
           make_latest: false
           files: |
-            Medya-debug-*.apk
-            Medya-release-*.apk
+            Medya-latest.apk
+            Medya-release-latest.apk
