@@ -1,94 +1,74 @@
 package com.medya.app;
 
 import android.Manifest;
-import android.content.pm.PackageManager;
 import android.os.Build;
 
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
 /**
- * Cihaz medya izinlerini (READ_MEDIA_IMAGES / VIDEO / AUDIO, Android 13+;
- * READ_EXTERNAL_STORAGE, daha eski sürümler) JavaScript tarafına açar.
+ * Cihaz medya izinlerini JavaScript tarafına açar.
+ * Android 13+ (API 33) ve üzeri: READ_MEDIA_IMAGES / VIDEO / AUDIO
+ * Daha eski sürümler: READ_EXTERNAL_STORAGE
  */
-@CapacitorPlugin(name = "MediaPermissions")
+@CapacitorPlugin(
+    name = "MediaPermissions",
+    permissions = {
+        @Permission(
+            alias = MediaPermissionsPlugin.MEDIA_ALIAS,
+            strings = {
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_MEDIA_AUDIO
+            }
+        ),
+        @Permission(
+            alias = MediaPermissionsPlugin.STORAGE_ALIAS,
+            strings = { Manifest.permission.READ_EXTERNAL_STORAGE }
+        )
+    }
+)
 public class MediaPermissionsPlugin extends Plugin {
 
-    private static final int REQUEST_CODE = 57123;
-    private PluginCall pendingCall;
+    static final String MEDIA_ALIAS = "media";
+    static final String STORAGE_ALIAS = "storage";
 
     @PluginMethod
     public void check(PluginCall call) {
-        JSObject result = new JSObject();
-        result.put("granted", allGranted());
-        call.resolve(result);
+        resolveGranted(call, isGranted());
     }
 
     @PluginMethod
     public void request(PluginCall call) {
-        List<String> missing = new ArrayList<>();
-        for (String permission : requiredPermissions()) {
-            if (getContext().checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-                missing.add(permission);
-            }
-        }
-
-        if (missing.isEmpty()) {
-            JSObject result = new JSObject();
-            result.put("granted", true);
-            call.resolve(result);
+        if (isGranted()) {
+            resolveGranted(call, true);
             return;
         }
-
-        pendingCall = call;
-        requestPermissions(missing.toArray(new String[0]), REQUEST_CODE);
+        requestPermissionForAlias(activeAlias(), call, "permissionCallback");
     }
 
-    @Override
-    public void handleOnRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.handleOnRequestPermissionsResult(requestCode, permissions, grantResults);
+    @PermissionCallback
+    private void permissionCallback(PluginCall call) {
+        resolveGranted(call, isGranted());
+    }
 
-        if (requestCode != REQUEST_CODE || pendingCall == null) {
-            return;
-        }
-
-        boolean granted = grantResults.length > 0;
-        for (int grantResult : grantResults) {
-            if (grantResult != PackageManager.PERMISSION_GRANTED) {
-                granted = false;
-                break;
-            }
-        }
-
+    private void resolveGranted(PluginCall call, boolean granted) {
         JSObject result = new JSObject();
         result.put("granted", granted);
-        pendingCall.resolve(result);
-        pendingCall = null;
+        call.resolve(result);
     }
 
-    private boolean allGranted() {
-        for (String permission : requiredPermissions()) {
-            if (getContext().checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-                return false;
-            }
-        }
-        return true;
+    private boolean isGranted() {
+        return getPermissionState(activeAlias()) == PermissionState.GRANTED;
     }
 
-    private String[] requiredPermissions() {
-        if (Build.VERSION.SDK_INT >= 33) {
-            return new String[]{
-                Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_VIDEO,
-                Manifest.permission.READ_MEDIA_AUDIO
-            };
-        }
-        return new String[]{ Manifest.permission.READ_EXTERNAL_STORAGE };
+    private String activeAlias() {
+        return Build.VERSION.SDK_INT >= 33 ? MEDIA_ALIAS : STORAGE_ALIAS;
     }
 }
