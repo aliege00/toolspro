@@ -119,7 +119,11 @@ export function videoThumb(url: string, atSeconds = 1): Promise<string | null> {
     }, 8000);
 
     video.onloadeddata = () => {
-      const target = Math.min(atSeconds, Math.max(0, (video.duration || 1) * 0.1));
+      const total = video.duration;
+      const target =
+        isFinite(total) && total > 0
+          ? Math.min(atSeconds, Math.max(0, total * 0.1))
+          : 0;
       video.currentTime = target;
     };
     video.onseeked = () => {

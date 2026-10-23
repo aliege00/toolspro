@@ -53,8 +53,9 @@ export async function saveBlob(blob: Blob, fileName: string): Promise<SaveResult
     return "downloaded";
   }
 
+  let data: string;
   try {
-    const data = await blobToBase64(blob);
+    data = await blobToBase64(blob);
     const written = await Filesystem.writeFile({
       path: `medya/${fileName}`,
       data,
@@ -70,20 +71,22 @@ export async function saveBlob(blob: Blob, fileName: string): Promise<SaveResult
       });
       return "shared";
     } catch {
-      // Paylaşma iptal edildi veya desteklenmiyor: indirilenlere yazmayı dene.
-      await Filesystem.writeFile({
-        path: fileName,
-        data,
-        directory: Directory.Documents,
-      });
-      return "shared";
+      // Paylaşma penceresi açılmadı: Belgeler klasörüne yazmayı dene.
     }
   } catch {
-    try {
-      triggerDownload(blob, fileName);
-      return "downloaded";
-    } catch {
-      return "failed";
-    }
+    return "failed";
+  }
+
+  try {
+    await Filesystem.writeFile({
+      path: fileName,
+      data,
+      directory: Directory.Documents,
+    });
+    return "shared";
+  } catch {
+    // Tarayıcı (WebView) blob indirmesini dosya yöneticisine yazamaz;
+    // dürüst olmak için başarısız döndür.
+    return "failed";
   }
 }
