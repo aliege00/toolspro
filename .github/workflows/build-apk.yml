@@ -1,0 +1,107 @@
+name: Build APK
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install web dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck and build web app
+        run: bun run build
+
+      - name: Sync Capacitor Android project
+        run: bunx cap sync android
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platforms;android-36 build-tools;36.0.0"
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Restore release keystore
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release-keystore.jks"
+          chmod 600 "$RUNNER_TEMP/release-keystore.jks"
+
+      - name: Build signed release APK
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release-keystore.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: Prepare APK artifacts
+        run: |
+          SHA="${GITHUB_SHA::7}"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "Medya-debug-$SHA.apk"
+          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk "Medya-release-$SHA.apk"
+          fi
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Medya-debug-apk
+          path: Medya-debug-*.apk
+          if-no-files-found: error
+
+      - name: Upload release APK
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Medya-release-apk
+          path: Medya-release-*.apk
+          if-no-files-found: error
+
+      - name: Move rolling latest tag
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          git tag --force latest "$GITHUB_SHA"
+          git push --force origin refs/tags/latest
+
+      - name: Publish APK to rolling prerelease
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: En son APK
+          prerelease: true
+          make_latest: false
+          files: |
+            Medya-debug-*.apk
+            Medya-release-*.apk
