@@ -10,8 +10,10 @@ import {
   useRunner,
 } from "./ToolFrame";
 import { createZip } from "@/lib/media";
+import { useT } from "@/i18n";
 
 export default function ZipTool() {
+  const t = useT();
   const [files, setFiles] = useState<File[]>([]);
   const { status, progress, error, result, run } = useRunner();
 
@@ -44,7 +46,7 @@ export default function ZipTool() {
 
   return (
     <div className="space-y-5">
-      <ToolSection title="Dosyalar">
+      <ToolSection title={t("section.files")}>
         {files.length === 0 ? (
           <button
             type="button"
@@ -55,8 +57,8 @@ export default function ZipTool() {
               <PlusIcon size={22} />
             </div>
             <div>
-              <p className="text-[15px] font-semibold">Dosya Ekle</p>
-              <p className="text-[12.5px] text-ink2">Birden çok dosya seçebilirsin</p>
+              <p className="text-[15px] font-semibold">{t("zip.add")}</p>
+              <p className="text-[12.5px] text-ink2">{t("zip.addNote")}</p>
             </div>
           </button>
         ) : (
@@ -81,7 +83,7 @@ export default function ZipTool() {
                     type="button"
                     onClick={() => removeFile(i)}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink3 active:bg-card"
-                    aria-label="Listeden çıkar"
+                    aria-label={t("zip.remove")}
                   >
                     <XMark size={16} />
                   </button>
@@ -94,7 +96,7 @@ export default function ZipTool() {
                 {files.length} dosya · {formatBytes(total)}
               </span>
               <Button size="sm" variant="ghost" onClick={() => void addFiles()}>
-                Ekle
+                {t("zip.addShort")}
               </Button>
             </div>
           </div>
@@ -106,7 +108,7 @@ export default function ZipTool() {
         progress={progress}
         error={error}
         onRun={start}
-        runLabel="ZIP Oluştur"
+        runLabel={t("zip.run")}
         disabled={files.length === 0}
       />
 

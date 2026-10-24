@@ -7,8 +7,10 @@ import { FileField, ToolSection, useToolFile } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
 import { probeCodecs, readVideoMeta } from "@/lib/media";
 import type { CodecProbe, VideoMeta } from "@/lib/media";
+import { useT } from "@/i18n";
 
 export default function VideoInfo({ initialFileId }: ToolProps) {
+  const t = useT();
   const { picked, choose, clear } = useToolFile(initialFileId, "video/*,audio/*");
   const [busy, setBusy] = useState(false);
   const [meta, setMeta] = useState<VideoMeta | null>(null);
@@ -36,17 +38,17 @@ export default function VideoInfo({ initialFileId }: ToolProps) {
 
   return (
     <div className="space-y-5">
-      <ToolSection title="Dosya">
+      <ToolSection title={t("section.file")}>
         <FileField
           picked={picked}
-          acceptLabel="Video veya ses dosyası"
+          acceptLabel={t("info.accept")}
           onChoose={() => void choose()}
           onClear={clear}
         />
       </ToolSection>
 
       <Button full loading={busy} disabled={!picked} onClick={() => void start}>
-        Bilgileri Oku
+        {t("info.run")}
       </Button>
 
       <AnimatePresence>
@@ -68,18 +70,23 @@ export default function VideoInfo({ initialFileId }: ToolProps) {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-5"
         >
-          <ToolSection title="Video bilgileri">
+          <ToolSection title={t("section.mediaInfo")}>
             <div className="space-y-2.5 text-[14px]">
               {[
-                ["Süre", formatDuration(meta.duration)],
-                ["Çözünürlük", meta.width > 0 ? `${meta.width} × ${meta.height}` : "okunamadı"],
-                ["En-boy", ratio ?? "—"],
-                ["Dosya boyutu", formatBytes(picked.file.size)],
-                ["İçerik türü", meta.type],
-                ["Ortalama bit hızı",
+                [t("info.duration"), formatDuration(meta.duration)],
+                [
+                  t("info.resolution"),
+                  meta.width > 0 ? `${meta.width} × ${meta.height}` : t("info.unread"),
+                ],
+                [t("info.ratio"), ratio ?? "—"],
+                [t("info.size"), formatBytes(picked.file.size)],
+                [t("info.contentType"), meta.type],
+                [
+                  t("info.bitrate"),
                   meta.duration > 0
                     ? `${Math.round((picked.file.size * 8) / meta.duration / 1000)} kbps`
-                    : "—"],
+                    : "—",
+                ],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-4">
                   <span className="text-ink2">{label}</span>
@@ -89,7 +96,7 @@ export default function VideoInfo({ initialFileId }: ToolProps) {
             </div>
           </ToolSection>
 
-          <ToolSection title="Oynatma desteği">
+          <ToolSection title={t("section.support")}>
             <div className="space-y-2 text-[13.5px]">
               {probes.map((probe) => (
                 <div key={probe.mime} className="flex items-center justify-between gap-3">
@@ -102,14 +109,13 @@ export default function VideoInfo({ initialFileId }: ToolProps) {
                     }
                   >
                     {probe.supported ? <Check size={16} /> : <XMark size={16} />}
-                    {probe.supported ? "Destekleniyor" : "Desteklenmiyor"}
+                    {probe.supported ? t("codec.supported") : t("codec.notSupported")}
                   </span>
                 </div>
               ))}
             </div>
             <p className="mt-3 text-[12.5px] leading-[1.45] text-ink2">
-              Sonuçlar bu cihazın oynatıcı motoruna (WebView) göredir; başka bir
-              oynatıcıda farklılık gösterebilir.
+              {t("info.supportNote")}
             </p>
           </ToolSection>
         </motion.div>

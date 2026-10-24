@@ -6,6 +6,8 @@ import { triggerDownload } from "./files";
 type PermissionsApi = {
   request: () => Promise<{ granted: boolean }>;
   check: () => Promise<{ granted: boolean }>;
+  requestCamera: () => Promise<{ granted: boolean }>;
+  requestMic: () => Promise<{ granted: boolean }>;
 };
 
 /** Uygulamanın kendi Capacitor eklentisi (android/MediaPermissionsPlugin). */
@@ -23,6 +25,28 @@ export async function requestMediaAccess(): Promise<boolean> {
   if (!isNative()) return true;
   try {
     const res = await MediaPermissions.request();
+    return res.granted;
+  } catch {
+    return false;
+  }
+}
+
+/** Kamera izni (QR tarama) — tarayıcıda sistem sorusu yeterlidir. */
+export async function requestCameraAccess(): Promise<boolean> {
+  if (!isNative()) return true;
+  try {
+    const res = await MediaPermissions.requestCamera();
+    return res.granted;
+  } catch {
+    return false;
+  }
+}
+
+/** Mikrofon izni (ses kaydedici) — tarayıcıda sistem sorusu yeterlidir. */
+export async function requestMicAccess(): Promise<boolean> {
+  if (!isNative()) return true;
+  try {
+    const res = await MediaPermissions.requestMic();
     return res.granted;
   } catch {
     return false;

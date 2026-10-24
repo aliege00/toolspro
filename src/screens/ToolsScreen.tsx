@@ -6,8 +6,10 @@ import { tools } from "@/tools/registry";
 import { OutputCard } from "@/tools/ToolFrame";
 import { useNav } from "@/lib/nav";
 import { useOutputs } from "@/lib/outputs";
+import { useT } from "@/i18n";
 
 export default function ToolsScreen() {
+  const t = useT();
   const { pop, push } = useNav();
   const { outputs } = useOutputs();
   const [showOutputs, setShowOutputs] = useState(false);
@@ -15,8 +17,8 @@ export default function ToolsScreen() {
   return (
     <div className="safe-bottom min-h-full pb-10">
       <NavBar
-        title="Araçlar"
-        subtitle="Çevrimdışı çalışır"
+        title={t("tools.title")}
+        subtitle={t("tools.subtitle")}
         onBack={pop}
         right={
           outputs.length > 0 ? (
@@ -25,7 +27,7 @@ export default function ToolsScreen() {
               onClick={() => setShowOutputs(true)}
               className="rounded-full bg-fill px-3 py-1.5 text-[13px] font-medium active:opacity-70"
             >
-              Çıktılar · {outputs.length}
+              {t("tools.outputs", { n: outputs.length })}
             </button>
           ) : undefined
         }
@@ -40,7 +42,7 @@ export default function ToolsScreen() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
-                delay: i * 0.05,
+                delay: Math.min(i, 10) * 0.04,
                 duration: 0.38,
                 ease: [0.22, 1, 0.36, 1],
               }}
@@ -52,9 +54,9 @@ export default function ToolsScreen() {
                 {tool.icon}
               </div>
               <div>
-                <p className="text-[15.5px] font-semibold">{tool.title}</p>
+                <p className="text-[15.5px] font-semibold">{t(tool.titleKey)}</p>
                 <p className="mt-0.5 text-[12px] leading-[1.3] text-ink2">
-                  {tool.desc}
+                  {t(tool.descKey)}
                 </p>
               </div>
             </motion.button>
@@ -64,15 +66,13 @@ export default function ToolsScreen() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{
-              delay: tools.length * 0.05,
+              delay: tools.length * 0.04,
               duration: 0.38,
               ease: [0.22, 1, 0.36, 1],
             }}
             className="col-span-2 flex items-center gap-2 rounded-[16px] bg-fill px-4 py-3.5 text-[13px] leading-[1.4] text-ink2"
           >
-            <span className="flex-1">
-              Dönüşümler cihazının işlemcisinde, internete yüklenmeden yapılır.
-            </span>
+            <span className="flex-1">{t("tools.offlineNote")}</span>
             <ChevronRight size={18} className="shrink-0 text-ink3" />
           </motion.div>
         </div>
@@ -81,12 +81,10 @@ export default function ToolsScreen() {
       <Sheet
         open={showOutputs}
         onClose={() => setShowOutputs(false)}
-        title={`Çıktılar (${outputs.length})`}
+        title={t("tools.outputsTitle", { n: outputs.length })}
       >
         {outputs.length === 0 ? (
-          <p className="py-6 text-center text-[14px] text-ink2">
-            Henüz çıktı yok.
-          </p>
+          <p className="py-6 text-center text-[14px] text-ink2">{t("common.empty")}</p>
         ) : (
           <div className="space-y-3">
             {outputs.map((output) => (

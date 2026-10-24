@@ -11,8 +11,10 @@ import {
 } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
 import { decodeToAudioBuffer, encodeMp3 } from "@/lib/media";
+import { useT } from "@/i18n";
 
 export default function VideoToMp3({ initialFileId }: ToolProps) {
+  const t = useT();
   const { picked, choose, clear } = useToolFile(initialFileId, "video/*,audio/*");
   const [kbps, setKbps] = useState<"128" | "192" | "320">("192");
   const { status, progress, error, result, run } = useRunner();
@@ -31,16 +33,16 @@ export default function VideoToMp3({ initialFileId }: ToolProps) {
 
   return (
     <div className="space-y-5">
-      <ToolSection title="Dosya">
+      <ToolSection title={t("section.file")}>
         <FileField
           picked={picked}
-          acceptLabel="Video veya ses dosyası (MP4, MKV, MOV...)"
+          acceptLabel={t("mp3.accept")}
           onChoose={() => void choose()}
           onClear={clear}
         />
       </ToolSection>
 
-      <ToolSection title="Bit hızı">
+      <ToolSection title={t("section.bitrate")}>
         <Segmented
           layoutId="mp3-kbps"
           value={kbps}
@@ -51,10 +53,7 @@ export default function VideoToMp3({ initialFileId }: ToolProps) {
             { value: "320", label: "320 kbps" },
           ]}
         />
-        <p className="mt-3 text-[12.5px] leading-[1.45] text-ink2">
-          Ses, cihazın yerleşik çözücüsüyle PCM'e çevrilip MP3'e kodlanır. Uzun
-          videolarda bu işlem bellek tüketir ve biraz sürebilir.
-        </p>
+        <p className="mt-3 text-[12.5px] leading-[1.45] text-ink2">{t("mp3.note")}</p>
       </ToolSection>
 
       <RunArea
@@ -62,7 +61,7 @@ export default function VideoToMp3({ initialFileId }: ToolProps) {
         progress={progress}
         error={error}
         onRun={start}
-        runLabel="MP3 Çıktısı Al"
+        runLabel={t("mp3.run")}
         disabled={!picked}
       />
 

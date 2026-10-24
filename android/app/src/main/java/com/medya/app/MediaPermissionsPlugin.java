@@ -13,9 +13,10 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
 /**
- * Cihaz medya izinlerini JavaScript tarafına açar.
- * Android 13+ (API 33) ve üzeri: READ_MEDIA_IMAGES / VIDEO / AUDIO
- * Daha eski sürümler: READ_EXTERNAL_STORAGE
+ * Cihaz izinlerini JavaScript tarafına açar:
+ * - medya (Android 13+: READ_MEDIA_IMAGES/VIDEO/AUDIO, eski: READ_EXTERNAL_STORAGE)
+ * - kamera (QR tarama)
+ * - mikrofon (ses kaydedici)
  */
 @CapacitorPlugin(
     name = "MediaPermissions",
@@ -31,6 +32,14 @@ import com.getcapacitor.annotation.PermissionCallback;
         @Permission(
             alias = MediaPermissionsPlugin.STORAGE_ALIAS,
             strings = { Manifest.permission.READ_EXTERNAL_STORAGE }
+        ),
+        @Permission(
+            alias = MediaPermissionsPlugin.CAMERA_ALIAS,
+            strings = { Manifest.permission.CAMERA }
+        ),
+        @Permission(
+            alias = MediaPermissionsPlugin.MIC_ALIAS,
+            strings = { Manifest.permission.RECORD_AUDIO }
         )
     }
 )
@@ -38,24 +47,45 @@ public class MediaPermissionsPlugin extends Plugin {
 
     static final String MEDIA_ALIAS = "media";
     static final String STORAGE_ALIAS = "storage";
+    static final String CAMERA_ALIAS = "camera";
+    static final String MIC_ALIAS = "mic";
+
+    private String pendingAlias;
 
     @PluginMethod
     public void check(PluginCall call) {
-        resolveGranted(call, isGranted());
+        resolveGranted(call, isGranted(activeMediaAlias()));
     }
 
     @PluginMethod
     public void request(PluginCall call) {
-        if (isGranted()) {
+        requestForAlias(activeMediaAlias(), call);
+    }
+
+    @PluginMethod
+    public void requestCamera(PluginCall call) {
+        requestForAlias(CAMERA_ALIAS, call);
+    }
+
+    @PluginMethod
+    public void requestMic(PluginCall call) {
+        requestForAlias(MIC_ALIAS, call);
+    }
+
+    private void requestForAlias(String alias, PluginCall call) {
+        if (isGranted(alias)) {
             resolveGranted(call, true);
             return;
         }
-        requestPermissionForAlias(activeAlias(), call, "permissionCallback");
+        pendingAlias = alias;
+        requestPermissionForAlias(alias, call, "aliasPermissionCallback");
     }
 
     @PermissionCallback
-    private void permissionCallback(PluginCall call) {
-        resolveGranted(call, isGranted());
+    private void aliasPermissionCallback(PluginCall call) {
+        String alias = pendingAlias;
+        pendingAlias = null;
+        resolveGranted(call, alias != null && isGranted(alias));
     }
 
     private void resolveGranted(PluginCall call, boolean granted) {
@@ -64,11 +94,14 @@ public class MediaPermissionsPlugin extends Plugin {
         call.resolve(result);
     }
 
-    private boolean isGranted() {
-        return getPermissionState(activeAlias()) == PermissionState.GRANTED;
+    private boolean isGranted(String alias) {
+        return getPermissionState(alias) == PermissionState.GRANTED;
     }
 
-    private String activeAlias() {
-        return Build.VERSION.SDK_INT >= 33 ? MEDIA_ALIAS : STORAGE_ALIAS;
+    private String activeMediaAlias() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            return MEDIA_ALIAS;
+        }
+        return STORAGE_ALIAS;
     }
 }

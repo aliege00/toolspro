@@ -12,8 +12,10 @@ import {
 } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
 import { decodeToAudioBuffer, encodeMp3, encodeWav, sliceBuffer } from "@/lib/media";
+import { useT } from "@/i18n";
 
 export default function AudioTrim({ initialFileId }: ToolProps) {
+  const t = useT();
   const { picked, choose, clear } = useToolFile(initialFileId, "audio/*,video/*");
   const [duration, setDuration] = useState(0);
   const [start, setStart] = useState(0);
@@ -76,27 +78,27 @@ export default function AudioTrim({ initialFileId }: ToolProps) {
 
   return (
     <div className="space-y-5">
-      <ToolSection title="Dosya">
+      <ToolSection title={t("section.file")}>
         <FileField
           picked={picked}
-          acceptLabel="Ses veya video dosyası"
+          acceptLabel={t("trim.accept")}
           onChoose={() => void choose()}
           onClear={clear}
         />
       </ToolSection>
 
-      <ToolSection title="Aralık">
+      <ToolSection title={t("section.range")}>
         {duration > 0 ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between text-[14px]">
-              <span className="text-ink2">Seçili aralık</span>
+              <span className="text-ink2">{t("trim.range")}</span>
               <span className="font-semibold">
                 {formatDuration(start)} → {formatDuration(end)} ·{" "}
                 {formatDuration(trimDuration)}
               </span>
             </div>
             <Slider
-              label="Başlangıç"
+              label={t("trim.start")}
               display={formatDuration(start)}
               value={start}
               min={0}
@@ -105,7 +107,7 @@ export default function AudioTrim({ initialFileId }: ToolProps) {
               onChange={setStart}
             />
             <Slider
-              label="Bitiş"
+              label={t("trim.end")}
               display={formatDuration(end)}
               value={end}
               min={Math.min(duration, start + 0.5)}
@@ -116,27 +118,22 @@ export default function AudioTrim({ initialFileId }: ToolProps) {
           </div>
         ) : (
           <p className="text-[13px] leading-[1.45] text-ink2">
-            {picked
-              ? "Süre okunuyor, kısa bir bekleme olabilir."
-              : "Ayarları görmek için bir dosya seç."}
+            {picked ? t("trim.loading") : t("trim.noFile")}
           </p>
         )}
       </ToolSection>
 
-      <ToolSection title="Çıktı biçimi">
+      <ToolSection title={t("section.format")}>
         <Segmented
           layoutId="trim-format"
           value={format}
           onChange={setFormat}
           options={[
             { value: "mp3", label: "MP3" },
-            { value: "wav", label: "WAV (kayısız)" },
+            { value: "wav", label: t("trim.wav") },
           ]}
         />
-        <p className="mt-3 text-[12.5px] leading-[1.45] text-ink2">
-          WAV sıkıştırılmadığı için dosya boyutu büyük olur; MP3 192 kbps ile
-          kodlanır.
-        </p>
+        <p className="mt-3 text-[12.5px] leading-[1.45] text-ink2">{t("trim.note")}</p>
       </ToolSection>
 
       <RunArea
@@ -144,7 +141,7 @@ export default function AudioTrim({ initialFileId }: ToolProps) {
         progress={progress}
         error={error}
         onRun={startRun}
-        runLabel="Kırp ve Çıktı Al"
+        runLabel={t("trim.run")}
         disabled={!picked || duration <= 0 || trimDuration < 0.1}
       />
 

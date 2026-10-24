@@ -12,8 +12,10 @@ import {
 } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
 import { processImage } from "@/lib/media";
+import { useT } from "@/i18n";
 
 export default function ImageCompress({ initialFileId }: ToolProps) {
+  const t = useT();
   const { picked, choose, clear } = useToolFile(initialFileId, "image/*");
   const [maxWidth, setMaxWidth] = useState<"0" | "1920" | "1280" | "720">("1920");
   const [quality, setQuality] = useState(75);
@@ -44,22 +46,22 @@ export default function ImageCompress({ initialFileId }: ToolProps) {
 
   return (
     <div className="space-y-5">
-      <ToolSection title="Görsel">
+      <ToolSection title={t("section.file")}>
         <FileField
           picked={picked}
-          acceptLabel="JPG, PNG, WebP, GIF..."
+          acceptLabel={t("compress.accept")}
           onChoose={() => void choose()}
           onClear={clear}
         />
       </ToolSection>
 
-      <ToolSection title="Ayarlar">
+      <ToolSection title={t("section.settings")}>
         <Segmented
           layoutId="compress-width"
           value={maxWidth}
           onChange={setMaxWidth}
           options={[
-            { value: "0", label: "Orijinal" },
+            { value: "0", label: t("compress.original") },
             { value: "1920", label: "1920 px" },
             { value: "1280", label: "1280 px" },
             { value: "720", label: "720 px" },
@@ -67,7 +69,7 @@ export default function ImageCompress({ initialFileId }: ToolProps) {
         />
         <div className="mt-4">
           <Slider
-            label="Kalite"
+            label={t("compress.quality")}
             display={`%${quality}`}
             value={quality}
             min={30}
@@ -94,14 +96,16 @@ export default function ImageCompress({ initialFileId }: ToolProps) {
         progress={progress}
         error={error}
         onRun={start}
-        runLabel="Sıkıştır"
+        runLabel={t("compress.run")}
         disabled={!picked}
       />
 
       {result && picked && (
         <p className="text-[13px] text-ink2">
           {formatBytes(picked.file.size)} → {formatBytes(result.size)}
-          {diff !== null && diff > 0 ? ` · %${diff} daha küçük` : " · bu cihazda küçülmedi"}
+          {diff !== null && diff > 0
+            ? ` · ${t("compress.shrunk", { p: diff })}`
+            : ` · ${t("compress.notShrunk")}`}
         </p>
       )}
 

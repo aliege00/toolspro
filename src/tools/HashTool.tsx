@@ -5,8 +5,10 @@ import { formatDate, formatBytes } from "@/lib/files";
 import { FileField, ToolSection, useToolFile } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
 import { sha256Hex } from "@/lib/media";
+import { useT } from "@/i18n";
 
 export default function HashTool({ initialFileId }: ToolProps) {
+  const t = useT();
   const { picked, choose, clear } = useToolFile(initialFileId, undefined);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -43,20 +45,20 @@ export default function HashTool({ initialFileId }: ToolProps) {
 
   return (
     <div className="space-y-5">
-      <ToolSection title="Dosya">
+      <ToolSection title={t("section.file")}>
         <FileField
           picked={picked}
-          acceptLabel="Herhangi bir dosya"
+          acceptLabel={t("hash.accept")}
           onChoose={() => void choose()}
           onClear={clear}
         />
       </ToolSection>
 
       {picked && (
-        <ToolSection title="Bilgiler">
+        <ToolSection title={t("section.info")}>
           <div className="space-y-2.5 text-[14px]">
             {[
-              ["Ad", picked.file.name],
+              [t("info.name"), picked.file.name],
               ["Boyut", formatBytes(picked.file.size)],
               ["İçerik türü", picked.file.type || "bilinmiyor"],
               ["Değiştirilme", formatDate(picked.file.lastModified)],
@@ -72,13 +74,13 @@ export default function HashTool({ initialFileId }: ToolProps) {
 
       <div className="space-y-3">
         <Button full loading={busy} disabled={!picked} onClick={() => void start()}>
-          SHA-256 Hesapla
+          {t("hash.run")}
         </Button>
         {busy && (
           <div className="space-y-1.5">
             <ProgressBar ratio={progress} />
             <p className="text-center text-[12.5px] text-ink2">
-              Okunuyor · %{Math.round(progress * 100)}
+              {t("hash.reading", { p: Math.round(progress * 100) })}
             </p>
           </div>
         )}
@@ -109,10 +111,10 @@ export default function HashTool({ initialFileId }: ToolProps) {
             <p className="font-mono text-[11.5px] leading-[1.5] break-all">{hash}</p>
             <div className="mt-3 flex gap-2">
               <Button size="sm" variant="secondary" onClick={() => void copy()}>
-                {copied ? "Kopyalandı" : "Kopyala"}
+                {copied ? t("common.copied") : t("common.copy")}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setHash(null)}>
-                Temizle
+                {t("common.clear")}
               </Button>
             </div>
           </motion.div>

@@ -8,6 +8,7 @@ import { useOutputs } from "@/lib/outputs";
 import type { Output } from "@/lib/outputs";
 import { useLibrary } from "@/lib/library";
 import { saveBlob } from "@/lib/native";
+import { useT } from "@/i18n";
 
 export type ToolProps = { initialFileId?: string };
 
@@ -141,6 +142,7 @@ export function FileField({
   onClear: () => void;
   multipleCount?: number;
 }) {
+  const t = useT();
   return (
     <AnimatePresence mode="wait" initial={false}>
       {picked || multipleCount ? (
@@ -158,21 +160,21 @@ export function FileField({
           <div className="min-w-0 flex-1">
             <p className="truncate text-[14.5px] font-medium">
               {multipleCount
-                ? `${multipleCount} dosya seçildi`
+                ? t("file.pickedCount", { n: multipleCount })
                 : picked?.file.name}
             </p>
             <p className="text-[12.5px] text-ink2">
-              {multipleCount ? "Listeye bakabilirsin" : formatBytes(picked!.file.size)}
+              {multipleCount ? t("file.pickedNote") : formatBytes(picked!.file.size)}
             </p>
           </div>
           <Button size="sm" variant="gray" onClick={onChoose}>
-            Değiştir
+            {t("common.change")}
           </Button>
           <button
             type="button"
             onClick={onClear}
             className="flex h-9 w-9 items-center justify-center rounded-full text-ink3 active:bg-card"
-            aria-label="Seçimi kaldır"
+            aria-label={t("common.remove")}
           >
             <TrashIcon size={17} />
           </button>
@@ -193,7 +195,7 @@ export function FileField({
             <FileIcon size={22} />
           </div>
           <div>
-            <p className="text-[15px] font-semibold">Dosya Seç</p>
+            <p className="text-[15px] font-semibold">{t("file.pick")}</p>
             <p className="text-[12.5px] text-ink2">{acceptLabel}</p>
           </div>
         </motion.button>
@@ -217,6 +219,7 @@ export function RunArea({
   runLabel: string;
   disabled: boolean;
 }) {
+  const t = useT();
   return (
     <div className="space-y-3">
       <Button full loading={status === "working"} disabled={disabled} onClick={onRun}>
@@ -226,7 +229,7 @@ export function RunArea({
         <div className="space-y-1.5">
           <ProgressBar ratio={progress} />
           <p className="text-center text-[12.5px] text-ink2">
-            İşleniyor · %{Math.round(progress * 100)}
+            {t("run.working", { p: Math.round(progress * 100) })}
           </p>
         </div>
       )}
@@ -254,6 +257,7 @@ const kindIcons: Record<Kind, React.ReactNode> = {
 };
 
 export function OutputCard({ output }: { output: Output }) {
+  const t = useT();
   const { removeOutput } = useOutputs();
   const [saveState, setSaveState] = useState<
     "idle" | "saving" | "saved" | "downloaded" | "failed"
@@ -300,19 +304,19 @@ export function OutputCard({ output }: { output: Output }) {
       {output.kind === "other" && (
         <p className="mt-3 rounded-[12px] bg-fill px-3.5 py-3 text-[13px] leading-[1.45] text-ink2">
           {output.name.endsWith(".zip")
-            ? "Arşiv hazır. Kaydedip dosya yöneticisinde açabilirsin."
-            : "Çıktı hazır."}
+            ? t("output.zipReady")
+            : t("output.ready")}
         </p>
       )}
 
       <div className="mt-3 flex items-center gap-2">
         <Button size="sm" variant="secondary" loading={saveState === "saving"} onClick={save}>
           {output.kind === "image" || output.kind === "audio" || output.kind === "video"
-            ? "Cihaza Kaydet"
-            : "Kaydet"}
+            ? t("output.save")
+            : t("output.saveShort")}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => removeOutput(output.id)}>
-          Kaldır
+          {t("common.remove")}
         </Button>
       </div>
 
@@ -326,10 +330,9 @@ export function OutputCard({ output }: { output: Output }) {
               saveState === "failed" ? "text-danger" : "text-ink2"
             }`}
           >
-            {saveState === "saved" && "Cihazına kaydedildi."}
-            {saveState === "downloaded" && "Dosya indirildi."}
-            {saveState === "failed" &&
-              "Kaydedilemedi. Çıktıyı buradan önizleyebilirsin."}
+            {saveState === "saved" && t("output.saved")}
+            {saveState === "downloaded" && t("output.downloaded")}
+            {saveState === "failed" && t("output.saveFailed")}
           </motion.p>
         )}
       </AnimatePresence>

@@ -6,6 +6,7 @@ export type Route =
   | { name: "video"; fileId?: string }
   | { name: "files" }
   | { name: "tools" }
+  | { name: "settings" }
   | { name: "tool"; id: string; fileId?: string };
 
 type NavCtx = {

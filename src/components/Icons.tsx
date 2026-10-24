@@ -132,6 +132,148 @@ export const PlusIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const SettingsIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1.5 14h5M9.5 8h5M17.5 16h5" />
+  </Icon>
+);
+
+export const RepeatIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M17 2.5l3 3-3 3" />
+    <path d="M4 12.5v-2a4 4 0 0 1 4-4h12" />
+    <path d="M7 21.5l-3-3 3-3" />
+    <path d="M20 11.5v2a4 4 0 0 1-4 4H4" />
+  </Icon>
+);
+
+export const Repeat1Icon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M17 2.5l3 3-3 3" />
+    <path d="M4 12.5v-2a4 4 0 0 1 4-4h12" />
+    <path d="M7 21.5l-3-3 3-3" />
+    <path d="M20 11.5v2a4 4 0 0 1-4 4H4" />
+    <text
+      x="12"
+      y="15.4"
+      fontSize="7.5"
+      fontWeight="700"
+      fill="currentColor"
+      stroke="none"
+      textAnchor="middle"
+    >
+      1
+    </text>
+  </Icon>
+);
+
+export const SearchIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M20.5 20.5l-4.2-4.2" />
+  </Icon>
+);
+
+export const HeartIcon = ({ size = 24, className, strokeWidth = 1.8 }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 1 0-7.4 7.4L12 21.4l8.8-8.4a5.2 5.2 0 0 0 0-7.4z" />
+  </svg>
+);
+
+export const LockIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
+    <path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" />
+  </Icon>
+);
+
+export const TrashBinIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3.5 6h17" />
+    <path d="M8.5 6V4.5A1.5 1.5 0 0 1 10 3h4a1.5 1.5 0 0 1 1.5 1.5V6" />
+    <path d="M6 6l1 13.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 6" />
+  </Icon>
+);
+
+export const StorageIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <ellipse cx="12" cy="6" rx="8" ry="3" />
+    <path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6" />
+    <path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
+  </Icon>
+);
+
+export const CopyIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="9" y="9" width="12" height="12" rx="2.5" />
+    <path d="M5 15H4.5A2.5 2.5 0 0 1 2 12.5v-8A2.5 2.5 0 0 1 4.5 2h8A2.5 2.5 0 0 1 15 4.5V5" />
+  </Icon>
+);
+
+export const AlbumIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3" y="7" width="18" height="14" rx="3" />
+    <path d="M7 7V5.5A2.5 2.5 0 0 1 9.5 3h5A2.5 2.5 0 0 1 17 5.5V7" />
+    <path d="M3 12.5h18" />
+  </Icon>
+);
+
+export const SortIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M7 4v16M7 20l-3-3M7 20l3-3" />
+    <path d="M17 20V4M17 4l-3 3M17 4l3 3" />
+  </Icon>
+);
+
+export const DuplicateIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="8.5" y="8.5" width="12.5" height="12.5" rx="2.5" />
+    <path d="M15.5 5.5V5A2 2 0 0 0 13.5 3h-8A2.5 2.5 0 0 0 3 5.5v8A2 2 0 0 0 5 15.5h.5" />
+  </Icon>
+);
+
+export const QrIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    <path d="M14 14h3v3h-3zM19.5 14H21M14 19.5V21M18 19.5h3v1.5M19.5 17h1.5" />
+  </Icon>
+);
+
+export const MicIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="9" y="2.5" width="6" height="12" rx="3" />
+    <path d="M5 11.5a7 7 0 0 0 14 0" />
+    <path d="M12 18.5V22" />
+  </Icon>
+);
+
+export const CameraIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4.5 7.5h2.2l1.4-2h7.8l1.4 2h2.2A2.5 2.5 0 0 1 22 10v8a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 18v-8a2.5 2.5 0 0 1 2.5-2.5z" />
+    <circle cx="12" cy="14" r="3.5" />
+  </Icon>
+);
+
+export const RenameIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+  </Icon>
+);
+
 export const VideoIcon = (p: IconProps) => (
   <Icon {...p}>
     <rect x="2" y="5" width="14" height="14" rx="3" />

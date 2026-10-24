@@ -34,6 +34,24 @@
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.55);
 }
 
+/* Mat vurgu renkleri (neonsuz) */
+html[data-accent="blue"] { --tint: #007aff; --tint-2: rgba(0, 122, 255, 0.12); }
+html.dark[data-accent="blue"] { --tint: #0a84ff; --tint-2: rgba(10, 132, 255, 0.2); }
+html[data-accent="indigo"] { --tint: #5856d6; --tint-2: rgba(88, 86, 214, 0.12); }
+html.dark[data-accent="indigo"] { --tint: #5e5ce6; --tint-2: rgba(94, 92, 230, 0.22); }
+html[data-accent="teal"] { --tint: #30b0c7; --tint-2: rgba(48, 176, 199, 0.14); }
+html.dark[data-accent="teal"] { --tint: #63d2e6; --tint-2: rgba(99, 210, 230, 0.2); }
+html[data-accent="green"] { --tint: #34c759; --tint-2: rgba(52, 199, 89, 0.14); }
+html.dark[data-accent="green"] { --tint: #30d158; --tint-2: rgba(48, 209, 88, 0.2); }
+html[data-accent="orange"] { --tint: #ff9500; --tint-2: rgba(255, 149, 0, 0.14); }
+html.dark[data-accent="orange"] { --tint: #ff9f0a; --tint-2: rgba(255, 159, 10, 0.2); }
+html[data-accent="pink"] { --tint: #ff2d55; --tint-2: rgba(255, 45, 85, 0.12); }
+html.dark[data-accent="pink"] { --tint: #ff375f; --tint-2: rgba(255, 55, 95, 0.2); }
+html[data-accent="red"] { --tint: #ff3b30; --tint-2: rgba(255, 59, 48, 0.12); }
+html.dark[data-accent="red"] { --tint: #ff453a; --tint-2: rgba(255, 69, 58, 0.2); }
+html[data-accent="graphite"] { --tint: #6e6e73; --tint-2: rgba(110, 110, 115, 0.16); }
+html.dark[data-accent="graphite"] { --tint: #98989d; --tint-2: rgba(152, 152, 157, 0.22); }
+
 @theme inline {
   --color-bg: var(--bg);
   --color-card: var(--card);

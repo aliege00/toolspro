@@ -3,28 +3,33 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui";
 import { FolderIcon, ShieldIcon, VideoIcon, WrenchIcon } from "@/components/Icons";
 import { isNative, requestMediaAccess } from "@/lib/native";
+import { useT } from "@/i18n";
 
 type Status = "idle" | "requesting" | "granted" | "denied";
 
 const rows = [
   {
+    key: "video",
     icon: <VideoIcon size={22} />,
-    title: "Video oynatma",
-    desc: "Cihazındaki videoları oynatıcıda açar",
+    titleKey: "onboarding.rowVideo.title",
+    descKey: "onboarding.rowVideo.desc",
   },
   {
+    key: "files",
     icon: <FolderIcon size={22} />,
-    title: "Dosyalara göz atma",
-    desc: "Galeri benzeri ızgarada önizler",
+    titleKey: "onboarding.rowFiles.title",
+    descKey: "onboarding.rowFiles.desc",
   },
   {
+    key: "tools",
     icon: <WrenchIcon size={22} />,
-    title: "Dönüştürme araçları",
-    desc: "Seçtiğin dosyalar üzerinde çalışır",
+    titleKey: "onboarding.rowTools.title",
+    descKey: "onboarding.rowTools.desc",
   },
 ];
 
 export default function Onboarding({ onDone }: { onDone: () => void }) {
+  const t = useT();
   const [status, setStatus] = useState<Status>("idle");
 
   useEffect(() => {
@@ -57,9 +62,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
           transition={{ delay: 0.06, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="text-[32px] leading-[1.1] font-bold"
         >
-          Dosyalara
-          <br />
-          erişim izni
+          {t("onboarding.title")}
         </motion.h1>
 
         <motion.p
@@ -68,15 +71,13 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
           transition={{ delay: 0.12, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="mt-3 text-[15px] leading-[1.5] text-ink2"
         >
-          Medya; videolarını oynatmak, dosyalarına göz atmak ve araçları
-          kullanmak için cihazındaki dosyalara erişmek ister. Erişim yalnızca
-          senin açtığın ve seçtiğin dosyalarda kullanılır.
+          {t("onboarding.desc")}
         </motion.p>
 
         <div className="mt-7 space-y-2.5">
           {rows.map((row, i) => (
             <motion.div
-              key={row.title}
+              key={row.key}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
@@ -90,8 +91,8 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
                 {row.icon}
               </div>
               <div className="min-w-0">
-                <p className="text-[16px] font-semibold">{row.title}</p>
-                <p className="truncate text-[13px] text-ink2">{row.desc}</p>
+                <p className="text-[16px] font-semibold">{t(row.titleKey)}</p>
+                <p className="truncate text-[13px] text-ink2">{t(row.descKey)}</p>
               </div>
             </motion.div>
           ))}
@@ -99,8 +100,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
 
         {!isNative() && (
           <p className="mt-5 text-[12px] leading-[1.4] text-ink3">
-            Tarayıcı önizlemesinde izinler sistem dosya seçiciyle sorulur;
-            Android sürümünde cihaz izin penceresi açılır.
+            {t("onboarding.browserNote")}
           </p>
         )}
 
@@ -110,8 +110,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             className="mt-4 text-[13px] leading-[1.45] text-danger"
           >
-            İzin verilmedi. Yine de devam edebilirsin; dosyalara sistem
-            seçicisi üzerinden erişilmeye devam eder.
+            {t("onboarding.denied")}
           </motion.p>
         )}
       </div>
@@ -119,16 +118,12 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
       <div className="mt-8 space-y-2.5">
         {status !== "granted" && (
           <>
-            <Button
-              full
-              loading={status === "requesting"}
-              onClick={request}
-            >
-              {status === "denied" ? "Yeniden Dene" : "İzin Ver"}
+            <Button full loading={status === "requesting"} onClick={request}>
+              {status === "denied" ? t("onboarding.retry") : t("onboarding.grant")}
             </Button>
             {status === "denied" && (
               <Button full variant="gray" onClick={onDone}>
-                Şimdilik Devam Et
+                {t("onboarding.skip")}
               </Button>
             )}
           </>
@@ -176,7 +171,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
             transition={{ delay: 0.6 }}
             className="mt-4 text-[17px] font-semibold"
           >
-            Hazır
+            {t("onboarding.ready")}
           </motion.p>
         </motion.div>
       )}

@@ -4,6 +4,7 @@ import {
   ChevronRight,
   FolderIcon,
   Moon,
+  SettingsIcon,
   Sun,
   VideoIcon,
   WrenchIcon,
@@ -11,25 +12,31 @@ import {
 import { useNav } from "@/lib/nav";
 import { useTheme } from "@/lib/theme";
 import { useOutputs } from "@/lib/outputs";
+import { useT } from "@/i18n";
 
-const entries = [
+const entries: {
+  route: "video" | "files" | "tools";
+  icon: React.ReactNode;
+  titleKey: string;
+  descKey: string;
+}[] = [
   {
-    route: "video" as const,
+    route: "video",
     icon: <VideoIcon size={26} />,
-    title: "Video Oynat",
-    desc: "Cihazındaki videoları oynat, hız ve tam ekran kontrolü",
+    titleKey: "home.video.title",
+    descKey: "home.video.desc",
   },
   {
-    route: "files" as const,
+    route: "files",
     icon: <FolderIcon size={26} />,
-    title: "Dosyalar",
-    desc: "Galeri gibi göz at, görüntü ve sesi önizle",
+    titleKey: "home.files.title",
+    descKey: "home.files.desc",
   },
   {
-    route: "tools" as const,
+    route: "tools",
     icon: <WrenchIcon size={26} />,
-    title: "Araçlar",
-    desc: "MP3 çıkarma, sıkıştırma, arşiv ve daha fazlası",
+    titleKey: "home.tools.title",
+    descKey: "home.tools.desc",
   },
 ];
 
@@ -38,11 +45,17 @@ const stagger = {
   show: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: 0.06 + i * 0.09, type: "spring" as const, stiffness: 300, damping: 26 },
+    transition: {
+      delay: 0.06 + i * 0.09,
+      type: "spring" as const,
+      stiffness: 300,
+      damping: 26,
+    },
   }),
 };
 
 export default function Home() {
+  const t = useT();
   const { push } = useNav();
   const { theme, toggle } = useTheme();
   const { outputs } = useOutputs();
@@ -65,14 +78,24 @@ export default function Home() {
             transition={{ delay: 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="mt-1 text-[15px] text-ink2"
           >
-            Oynat, göz at, dönüştür
+            {t("home.tagline")}
           </motion.p>
         </div>
+
         <div className="flex items-center gap-2 pt-2">
+          <motion.button
+            type="button"
+            whileTap={{ scale: 0.9 }}
+            onClick={() => push({ name: "settings" })}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-fill text-ink2 active:bg-card"
+            aria-label={t("home.settings")}
+          >
+            <SettingsIcon size={19} />
+          </motion.button>
           <span className="text-ink2">
             {theme === "dark" ? <Moon size={19} /> : <Sun size={19} />}
           </span>
-          <Toggle checked={theme === "dark"} onChange={toggle} label="Koyu mod" />
+          <Toggle checked={theme === "dark"} onChange={toggle} label={t("home.darkMode")} />
         </div>
       </div>
 
@@ -93,9 +116,9 @@ export default function Home() {
               {entry.icon}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[19px] font-semibold">{entry.title}</p>
+              <p className="text-[19px] font-semibold">{t(entry.titleKey)}</p>
               <p className="mt-0.5 text-[13.5px] leading-[1.35] text-ink2">
-                {entry.desc}
+                {t(entry.descKey)}
               </p>
             </div>
             <span className="text-ink3">
@@ -115,8 +138,10 @@ export default function Home() {
           onClick={() => push({ name: "tools" })}
           className="mt-4 flex w-full items-center justify-between rounded-[16px] bg-fill px-4 py-3 text-[15px] font-medium active:opacity-70"
         >
-          <span>Araç çıktıları</span>
-          <span className="text-ink2">{outputs.length} dosya</span>
+          <span>{t("home.outputs")}</span>
+          <span className="text-ink2">
+            {t("home.outputsCount", { n: outputs.length })}
+          </span>
         </motion.button>
       )}
 
@@ -126,7 +151,7 @@ export default function Home() {
         transition={{ delay: 0.5 }}
         className="mt-10 text-center text-[12px] text-ink3"
       >
-        Tüm işlemler cihazında, çevrimdışı yapılır
+        {t("home.offline")}
       </motion.p>
     </div>
   );

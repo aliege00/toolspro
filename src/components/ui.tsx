@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { ChevronLeft } from "./Icons";
+import { useT } from "@/i18n";
 
 type ButtonVariant = "primary" | "secondary" | "gray" | "danger" | "ghost";
 type ButtonSize = "lg" | "md" | "sm";
@@ -261,6 +262,7 @@ export function Sheet({
   title?: string;
   children: ReactNode;
 }) {
+  const t = useT();
   return (
     <AnimatePresence>
       {open && (
@@ -289,7 +291,7 @@ export function Sheet({
                     onClick={onClose}
                     className="text-[15px] font-medium text-tint"
                   >
-                    Kapat
+                    {t("common.close")}
                   </button>
                 </div>
               )}

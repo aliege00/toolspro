@@ -11,12 +11,14 @@ import {
 } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
 import { processImage } from "@/lib/media";
+import { useT } from "@/i18n";
 
 type Target = "jpeg" | "png" | "webp";
 
 const extensions: Record<Target, string> = { jpeg: "jpg", png: "png", webp: "webp" };
 
 export default function ImageConvert({ initialFileId }: ToolProps) {
+  const t = useT();
   const { picked, choose, clear } = useToolFile(initialFileId, "image/*");
   const [target, setTarget] = useState<Target>("jpeg");
   const [quality, setQuality] = useState(90);
@@ -37,16 +39,16 @@ export default function ImageConvert({ initialFileId }: ToolProps) {
 
   return (
     <div className="space-y-5">
-      <ToolSection title="Görsel">
+      <ToolSection title={t("section.file")}>
         <FileField
           picked={picked}
-          acceptLabel="Dönüştürülecek görseli seç"
+          acceptLabel={t("convert.accept")}
           onChoose={() => void choose()}
           onClear={clear}
         />
       </ToolSection>
 
-      <ToolSection title="Hedef biçim">
+      <ToolSection title={t("convert.target")}>
         <Segmented
           layoutId="convert-target"
           value={target}
@@ -60,7 +62,7 @@ export default function ImageConvert({ initialFileId }: ToolProps) {
         {target !== "png" ? (
           <div className="mt-4">
             <Slider
-              label="Kalite"
+              label={t("compress.quality")}
               display={`%${quality}`}
               value={quality}
               min={30}
@@ -70,9 +72,7 @@ export default function ImageConvert({ initialFileId }: ToolProps) {
             />
           </div>
         ) : (
-          <p className="mt-3 text-[12.5px] leading-[1.45] text-ink2">
-            PNG kayıpsız bir biçimdir; kalite ayarı uygulanmaz.
-          </p>
+          <p className="mt-3 text-[12.5px] leading-[1.45] text-ink2">{t("convert.pngNote")}</p>
         )}
       </ToolSection>
 
@@ -81,7 +81,7 @@ export default function ImageConvert({ initialFileId }: ToolProps) {
         progress={progress}
         error={error}
         onRun={start}
-        runLabel="Dönüştür"
+        runLabel={t("convert.run")}
         disabled={!picked}
       />
 

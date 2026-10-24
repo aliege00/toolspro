@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ThemeProvider } from "@/lib/theme";
+import { LocaleProvider } from "@/i18n";
 import { LibraryProvider } from "@/lib/library";
 import { OutputsProvider } from "@/lib/outputs";
 import { NavProvider, useNav } from "@/lib/nav";
@@ -11,6 +12,7 @@ import VideoScreen from "@/screens/VideoScreen";
 import FilesScreen from "@/screens/FilesScreen";
 import ToolsScreen from "@/screens/ToolsScreen";
 import ToolScreen from "@/screens/ToolScreen";
+import Settings from "@/screens/Settings";
 
 function renderRoute(route: Route) {
   switch (route.name) {
@@ -24,6 +26,8 @@ function renderRoute(route: Route) {
       return <ToolsScreen />;
     case "tool":
       return <ToolScreen id={route.id} fileId={route.fileId} />;
+    case "settings":
+      return <Settings />;
   }
 }
 
@@ -80,12 +84,14 @@ function Gate() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <LibraryProvider>
-        <OutputsProvider>
-          <Gate />
-        </OutputsProvider>
-      </LibraryProvider>
-    </ThemeProvider>
+    <LocaleProvider>
+      <ThemeProvider>
+        <LibraryProvider>
+          <OutputsProvider>
+            <Gate />
+          </OutputsProvider>
+        </LibraryProvider>
+      </ThemeProvider>
+    </LocaleProvider>
   );
 }

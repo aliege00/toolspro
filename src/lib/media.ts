@@ -242,6 +242,55 @@ export async function createZip(
   return new Blob([zipped as unknown as BlobPart], { type: "application/zip" });
 }
 
+/** Videonun belirli bir saniyesinden PNG kare çıkarır. */
+export async function captureFrame(
+  url: string,
+  time: number,
+): Promise<{ blob: Blob; width: number; height: number }> {
+  const video = document.createElement("video");
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = "auto";
+  video.src = url;
+
+  await new Promise<void>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error("timeout")), 15000);
+    video.onloadeddata = () => {
+      window.clearTimeout(timer);
+      resolve();
+    };
+    video.onerror = () => {
+      window.clearTimeout(timer);
+      reject(new Error("load"));
+    };
+  });
+
+  await new Promise<void>((resolve) => {
+    video.onseeked = () => resolve();
+    video.currentTime = Math.max(0, time);
+  });
+
+  try {
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+    if (!width || !height) throw new Error("size");
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas");
+    ctx.drawImage(video, 0, 0, width, height);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/png"),
+    );
+    if (!blob) throw new Error("encode");
+    return { blob, width, height };
+  } finally {
+    video.removeAttribute("src");
+    video.load();
+  }
+}
+
 export type VideoMeta = {
   duration: number;
   width: number;
