@@ -14,8 +14,14 @@ import {
   RepeatIcon,
   ScissorsIcon,
   ShieldIcon,
+  TextIcon,
+  LayersIcon,
 } from "@/components/Icons";
 import VideoToMp3 from "./VideoToMp3";
+import VideoTrim from "./VideoTrim";
+import VideoJoin from "./VideoJoin";
+import VideoCompress from "./VideoCompress";
+import OcrTool from "./OcrTool";
 import AudioTrim from "./AudioTrim";
 import ImageCompress from "./ImageCompress";
 import ImageConvert from "./ImageConvert";
@@ -47,6 +53,34 @@ export const tools: ToolMeta[] = [
     descKey: "tool.videoToMp3.desc",
     icon: <MusicIcon size={24} />,
     component: VideoToMp3,
+  },
+  {
+    id: "video-trim",
+    titleKey: "tool.videoTrim.title",
+    descKey: "tool.videoTrim.desc",
+    icon: <ScissorsIcon size={24} />,
+    component: VideoTrim,
+  },
+  {
+    id: "video-join",
+    titleKey: "tool.videoJoin.title",
+    descKey: "tool.videoJoin.desc",
+    icon: <LayersIcon size={24} />,
+    component: VideoJoin,
+  },
+  {
+    id: "video-compress",
+    titleKey: "tool.videoCompress.title",
+    descKey: "tool.videoCompress.desc",
+    icon: <CompressIcon size={24} />,
+    component: VideoCompress,
+  },
+  {
+    id: "ocr",
+    titleKey: "tool.ocr.title",
+    descKey: "tool.ocr.desc",
+    icon: <TextIcon size={24} />,
+    component: OcrTool,
   },
   {
     id: "audio-trim",

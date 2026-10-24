@@ -274,6 +274,26 @@ export const RenameIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const TextIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4.5 6.5V4.5h15v2" />
+    <path d="M12 4.5V19.5" />
+    <path d="M8.5 19.5h7" />
+  </Icon>
+);
+
+export const ArrowUpIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 19V5M12 5l-6 6M12 5l6 6" />
+  </Icon>
+);
+
+export const ArrowDownIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 5v14M12 19l-6-6M12 19l6-6" />
+  </Icon>
+);
+
 export const VideoIcon = (p: IconProps) => (
   <Icon {...p}>
     <rect x="2" y="5" width="14" height="14" rx="3" />

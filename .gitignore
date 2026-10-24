@@ -1,6 +1,8 @@
 node_modules/
 dist/
 artifacts/
+public/ffmpeg/
+public/ocr/
 *.local
 .DS_Store
 npm-debug.log*
