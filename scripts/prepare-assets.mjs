@@ -1,7 +1,8 @@
-import { cpSync, existsSync, mkdirSync, statSync, createWriteStream } from "node:fs";
+import { cpSync, existsSync, mkdirSync, statSync, createWriteStream, readFileSync, unlinkSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { gunzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -40,6 +41,27 @@ async function download(url, dest) {
     throw new Error(`HTTP ${response.status}`);
   }
   await pipeline(Readable.fromWeb(response.body), createWriteStream(dest));
+}
+
+/**
+ * Android aapt paketlerken `.gz` dosyalarını açıp uzantısını atar;
+ * bu yüzden dil paketlerini açılmış hâlde (`.traineddata`) tutuyoruz
+ * ve OCR'da `gzip: false` kullanıyoruz.
+ */
+async function ensureLang(code, url) {
+  const plain = join(langDir, `${code}.traineddata`);
+  const gz = `${plain}.gz`;
+  if (existsSync(plain) && statSync(plain).size > 0) {
+    if (existsSync(gz)) unlinkSync(gz);
+    return;
+  }
+  if (!existsSync(gz)) {
+    await download(url, gz);
+  }
+  const raw = readFileSync(gz);
+  const { writeFileSync } = await import("node:fs");
+  writeFileSync(plain, gunzipSync(raw));
+  unlinkSync(gz);
 }
 
 async function main() {
@@ -84,11 +106,9 @@ async function main() {
   // --- Dil paketleri (TR/EN çevrimdışı; indirilemezse uyarı) ---
   ensure(langDir);
   for (const lang of LANGS) {
-    const dest = join(langDir, `${lang.code}.traineddata.gz`);
-    if (existsSync(dest) && statSync(dest).size > 0) continue;
     try {
-      await download(lang.url, dest);
-      console.log(`[assets] ${lang.code} dil paketi indirildi`);
+      await ensureLang(lang.code, lang.url);
+      console.log(`[assets] ${lang.code} dil paketi hazır`);
     } catch (error) {
       console.warn(
         `[assets] ${lang.code} indirilemedi (${error.message}) — OCR bu dilde çevrimdışı çalışmayabilir`,

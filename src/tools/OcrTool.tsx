@@ -57,7 +57,9 @@ export default function OcrTool() {
         workerPath: `${base}ocr/worker.min.js`,
         corePath: `${base}ocr/core/`,
         langPath: offline ? `${base}ocr/lang` : TESSDATA_FAST,
-        gzip: true,
+        // Android aapt .gz paketlerini açtığı için çevrimdışı paketler düz metindir;
+        // CDN'deki tessdata_fast dosyaları ise .gz olarak kalır.
+        gzip: !offline,
         workerBlobURL: false,
         logger: (message: { status: string; progress: number }) => {
           if (message.status === "recognizing text") {
