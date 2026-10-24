@@ -5,12 +5,13 @@ import {
   FileField,
   OutputCard,
   RunArea,
+  SizeWarning,
   ToolSection,
   useRunner,
   useToolFile,
 } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
-import { getFFmpeg } from "@/lib/ffmpeg";
+import { assertFFmpegAlive, execFFmpeg, getFFmpeg } from "@/lib/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import { useT } from "@/i18n";
 
@@ -21,14 +22,15 @@ export default function VideoCompress({ initialFileId }: ToolProps) {
   const { picked, choose, clear } = useToolFile(initialFileId, "video/*");
   const [height, setHeight] = useState<Height>("720");
   const [crf, setCrf] = useState(23);
-  const { status, progress, error, result, run } = useRunner();
+  const { status, progress, error, result, run, cancel } = useRunner();
 
   const start = () => {
     if (!picked) return;
-    void run("Video Sıkıştır", async (onProgress) => {
+    void run("Video Sıkıştır", async (onProgress, signal) => {
       const ffmpeg = await getFFmpeg();
       onProgress(0.08);
       await ffmpeg.writeFile("input.mp4", await fetchFile(picked.file));
+      assertFFmpegAlive(signal);
       onProgress(0.18);
 
       const args = [
@@ -43,19 +45,18 @@ export default function VideoCompress({ initialFileId }: ToolProps) {
         "output.mp4",
       ];
 
-      const onProgressEvent = ({ progress: ratio }: { progress: number }) => {
-        onProgress(0.2 + Math.min(1, Math.max(0, ratio)) * 0.75);
-      };
-      ffmpeg.on("progress", onProgressEvent);
       try {
-        const code = await ffmpeg.exec(args);
+        const code = await execFFmpeg(ffmpeg, args, {
+          signal,
+          onProgress: (ratio) => onProgress(0.2 + ratio * 0.75),
+        });
         if (code !== 0) throw new Error(`ffmpeg exit ${code}`);
-      } catch {
+      } catch (e) {
+        if (signal.aborted) throw e;
         throw new Error(t("videoCompress.error"));
-      } finally {
-        ffmpeg.off("progress", onProgressEvent);
       }
 
+      assertFFmpegAlive(signal);
       const data = await ffmpeg.readFile("output.mp4");
       const bytes =
         data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
@@ -76,12 +77,15 @@ export default function VideoCompress({ initialFileId }: ToolProps) {
   return (
     <div className="space-y-5">
       <ToolSection title={t("section.file")}>
-        <FileField
-          picked={picked}
-          acceptLabel={t("info.accept")}
-          onChoose={() => void choose()}
-          onClear={clear}
-        />
+        <div className="space-y-3">
+          <FileField
+            picked={picked}
+            acceptLabel={t("info.accept")}
+            onChoose={() => void choose()}
+            onClear={clear}
+          />
+          <SizeWarning bytes={picked?.file.size ?? 0} />
+        </div>
       </ToolSection>
 
       <ToolSection title={t("section.settings")}>
@@ -119,6 +123,7 @@ export default function VideoCompress({ initialFileId }: ToolProps) {
         onRun={start}
         runLabel={t("videoCompress.run")}
         disabled={!picked}
+        onCancel={cancel}
       />
 
       {result && picked && (

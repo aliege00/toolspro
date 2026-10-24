@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Toggle } from "@/components/ui";
+import { MedyaMark } from "@/components/Brand";
 import {
   ChevronRight,
   FolderIcon,
@@ -61,17 +62,34 @@ export default function Home() {
   const { outputs } = useOutputs();
 
   return (
-    <div className="safe-top safe-bottom min-h-full px-5 pb-10">
-      <div className="flex items-start justify-between pt-4 pb-8">
+    <div className="safe-top safe-bottom relative min-h-full overflow-hidden px-5 pb-10">
+      <motion.div
+        aria-hidden
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        className="pointer-events-none absolute -top-24 -right-16 h-64 w-64 rounded-full bg-tint2 blur-3xl"
+      />
+
+      <div className="relative flex items-start justify-between pt-4 pb-8">
         <div>
-          <motion.h1
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="text-[34px] leading-[1.05] font-bold"
-          >
-            Medya
-          </motion.h1>
+          <div className="flex items-center gap-2.5">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.7, rotate: -8 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            >
+              <MedyaMark size={40} />
+            </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.04, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="text-[34px] leading-[1.05] font-bold"
+            >
+              Medya
+            </motion.h1>
+          </div>
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -108,13 +126,21 @@ export default function Home() {
             variants={stagger}
             initial="hidden"
             animate="show"
+            whileHover={{ y: -2 }}
             whileTap={{ scale: 0.975 }}
             onClick={() => push({ name: entry.route })}
             className="flex w-full items-center gap-4 rounded-[20px] bg-card px-4 py-4 text-left shadow-[var(--shadow-card)] active:bg-card2"
           >
-            <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[16px] bg-tint2 text-tint">
+            <motion.div
+              variants={{
+                hidden: { scale: 0.9, opacity: 0 },
+                show: { scale: 1, opacity: 1 },
+              }}
+              transition={{ type: "spring", stiffness: 320, damping: 22 }}
+              className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[16px] bg-tint2 text-tint"
+            >
               {entry.icon}
-            </div>
+            </motion.div>
             <div className="min-w-0 flex-1">
               <p className="text-[19px] font-semibold">{t(entry.titleKey)}</p>
               <p className="mt-0.5 text-[13.5px] leading-[1.35] text-ink2">
@@ -145,14 +171,19 @@ export default function Home() {
         </motion.button>
       )}
 
-      <motion.p
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="mt-10 text-center text-[12px] text-ink3"
+        className="mt-10 flex items-center justify-center gap-1.5 text-[12px] text-ink3"
       >
+        <motion.span
+          className="h-1.5 w-1.5 rounded-full bg-success"
+          animate={{ opacity: [0.35, 1, 0.35] }}
+          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+        />
         {t("home.offline")}
-      </motion.p>
+      </motion.div>
     </div>
   );
 }

@@ -8,15 +8,28 @@ import {
   XMark,
 } from "@/components/Icons";
 import { formatBytes, pickFiles } from "@/lib/files";
-import { OutputCard, RunArea, ToolSection, useRunner } from "./ToolFrame";
-import { ffmpegExtension, getFFmpeg, mimeForExt } from "@/lib/ffmpeg";
+import {
+  OutputCard,
+  RunArea,
+  SizeWarning,
+  ToolSection,
+  useRunner,
+} from "./ToolFrame";
+import {
+  assertFFmpegAlive,
+  execFFmpeg,
+  ffmpegExtension,
+  getFFmpeg,
+  mimeForExt,
+} from "@/lib/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import { useT } from "@/i18n";
 
 export default function VideoJoin() {
   const t = useT();
   const [files, setFiles] = useState<File[]>([]);
-  const { status, progress, error, result, run } = useRunner();
+  const { status, progress, error, result, run, cancel } = useRunner();
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
 
   const addFiles = async () => {
     const picked = await pickFiles({ multiple: true, accept: "video/*" });
@@ -40,17 +53,19 @@ export default function VideoJoin() {
 
   const start = () => {
     if (files.length < 2) return;
-    void run("Video Birleştir", async (onProgress) => {
+    void run("Video Birleştir", async (onProgress, signal) => {
       const ffmpeg = await getFFmpeg();
       const written: string[] = [];
 
       for (let i = 0; i < files.length; i += 1) {
+        assertFFmpegAlive(signal);
         const ext = ffmpegExtension(files[i].name);
         const name = `part${i}.${ext}`;
         await ffmpeg.writeFile(name, await fetchFile(files[i]));
         written.push(name);
         onProgress(0.05 + ((i + 1) / files.length) * 0.3);
       }
+      assertFFmpegAlive(signal);
 
       const list = `ffconcat version 1.0\n${written
         .map((name) => `file '${name}'`)
@@ -59,25 +74,19 @@ export default function VideoJoin() {
 
       const outExt = ffmpegExtension(files[0].name);
       const outputName = `joined.${outExt}`;
-      const onProgressEvent = ({ progress: ratio }: { progress: number }) => {
-        onProgress(0.4 + Math.min(1, Math.max(0, ratio)) * 0.55);
-      };
-      ffmpeg.on("progress", onProgressEvent);
       try {
-        const code = await ffmpeg.exec([
-          "-f", "concat",
-          "-safe", "0",
-          "-i", "list.txt",
-          "-c", "copy",
-          outputName,
-        ]);
+        const code = await execFFmpeg(
+          ffmpeg,
+          ["-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", outputName],
+          { signal, onProgress: (ratio) => onProgress(0.4 + ratio * 0.55) },
+        );
         if (code !== 0) throw new Error(`ffmpeg exit ${code}`);
-      } catch {
+      } catch (e) {
+        if (signal.aborted) throw e;
         throw new Error(t("videoJoin.error"));
-      } finally {
-        ffmpeg.off("progress", onProgressEvent);
       }
 
+      assertFFmpegAlive(signal);
       const data = await ffmpeg.readFile(outputName);
       const bytes =
         data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
@@ -164,6 +173,8 @@ export default function VideoJoin() {
         )}
       </ToolSection>
 
+      <SizeWarning bytes={totalBytes} />
+
       <p className="text-[12.5px] leading-[1.45] text-ink2">{t("videoJoin.note")}</p>
 
       <RunArea
@@ -173,6 +184,7 @@ export default function VideoJoin() {
         onRun={start}
         runLabel={t("videoJoin.run")}
         disabled={files.length < 2}
+        onCancel={cancel}
       />
 
       {result && <OutputCard output={result} />}

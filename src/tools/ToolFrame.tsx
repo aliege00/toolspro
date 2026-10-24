@@ -4,6 +4,7 @@ import { Button, ProgressBar } from "@/components/ui";
 import { FileIcon, MusicIcon, TrashIcon, VideoIcon } from "@/components/Icons";
 import { formatBytes, pickFiles, replaceExt } from "@/lib/files";
 import type { Kind } from "@/lib/files";
+import { FFMPEG_WARN_BYTES } from "@/lib/ffmpeg";
 import { useOutputs } from "@/lib/outputs";
 import type { Output } from "@/lib/outputs";
 import { useLibrary } from "@/lib/library";
@@ -73,26 +74,62 @@ export function useToolFile(initialFileId?: string, accept?: string) {
 
 type RunResult = { blob: Blob; name: string };
 
+/** Uzun süren işlemlerde gösterilen hafif uyarı; işlemi engellemez. */
+export function SizeWarning({ bytes }: { bytes: number }) {
+  const t = useT();
+  if (!bytes || bytes < FFMPEG_WARN_BYTES) return null;
+  return (
+    <motion.p
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-[12px] bg-fill px-3.5 py-3 text-[12.5px] leading-[1.45] text-ink2"
+    >
+      {t("run.largeFile", { size: formatBytes(bytes) })}
+    </motion.p>
+  );
+}
+
 export function useRunner() {
   const { addOutput } = useOutputs();
-  const [status, setStatus] = useState<"idle" | "working" | "done" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "working" | "cancelled" | "done" | "error"
+  >("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Output | null>(null);
+  const controller = useRef<AbortController | null>(null);
 
   const run = useCallback(
-    async (tool: string, task: (onProgress: (ratio: number) => void) => Promise<RunResult>) => {
+    async (
+      tool: string,
+      task: (
+        onProgress: (ratio: number) => void,
+        signal: AbortSignal,
+      ) => Promise<RunResult>,
+    ) => {
+      controller.current?.abort();
+      const next = new AbortController();
+      controller.current = next;
       setStatus("working");
       setProgress(0);
       setError(null);
       setResult(null);
       try {
-        const res = await task(setProgress);
+        const res = await task(setProgress, next.signal);
+        if (next.signal.aborted) {
+          setStatus("cancelled");
+          return;
+        }
         const output = addOutput(res.name, res.blob, tool);
         setResult(output);
         setProgress(1);
         setStatus("done");
       } catch (e) {
+        if (next.signal.aborted) {
+          setProgress(0);
+          setStatus("cancelled");
+          return;
+        }
         setError(e instanceof Error ? e.message : "İşlem tamamlanamadı.");
         setStatus("error");
       }
@@ -100,14 +137,20 @@ export function useRunner() {
     [addOutput],
   );
 
+  const cancel = useCallback(() => {
+    controller.current?.abort();
+  }, []);
+
   const reset = useCallback(() => {
+    controller.current?.abort();
+    controller.current = null;
     setStatus("idle");
     setProgress(0);
     setError(null);
     setResult(null);
   }, []);
 
-  return { status, progress, error, result, run, reset };
+  return { status, progress, error, result, run, reset, cancel };
 }
 
 export function ToolSection({
@@ -211,28 +254,59 @@ export function RunArea({
   onRun,
   runLabel,
   disabled,
+  onCancel,
 }: {
-  status: "idle" | "working" | "done" | "error";
+  status: "idle" | "working" | "cancelled" | "done" | "error";
   progress: number;
   error: string | null;
   onRun: () => void;
   runLabel: string;
   disabled: boolean;
+  onCancel?: () => void;
 }) {
   const t = useT();
   return (
     <div className="space-y-3">
-      <Button full loading={status === "working"} disabled={disabled} onClick={onRun}>
+      <Button
+        full
+        loading={status === "working"}
+        disabled={disabled || status === "working"}
+        onClick={onRun}
+      >
         {runLabel}
       </Button>
       {status === "working" && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <ProgressBar ratio={progress} />
-          <p className="text-center text-[12.5px] text-ink2">
-            {t("run.working", { p: Math.round(progress * 100) })}
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[12.5px] text-ink2">
+              {t("run.working", { p: Math.round(progress * 100) })}
+            </p>
+            {onCancel && (
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.94 }}
+                onClick={onCancel}
+                className="rounded-full bg-fill px-3.5 py-1.5 text-[13px] font-medium text-ink"
+              >
+                {t("run.cancel")}
+              </motion.button>
+            )}
+          </div>
         </div>
       )}
+      <AnimatePresence>
+        {status === "cancelled" && (
+          <motion.p
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="text-center text-[13px] text-ink2"
+          >
+            {t("run.cancelled")}
+          </motion.p>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {status === "error" && error && (
           <motion.p

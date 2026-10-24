@@ -5,12 +5,19 @@ import {
   FileField,
   OutputCard,
   RunArea,
+  SizeWarning,
   ToolSection,
   useRunner,
   useToolFile,
 } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
-import { ffmpegExtension, getFFmpeg, mimeForExt } from "@/lib/ffmpeg";
+import {
+  assertFFmpegAlive,
+  execFFmpeg,
+  ffmpegExtension,
+  getFFmpeg,
+  mimeForExt,
+} from "@/lib/ffmpeg";
 import { readVideoMeta } from "@/lib/media";
 import { fetchFile } from "@ffmpeg/util";
 import { useT } from "@/i18n";
@@ -24,7 +31,7 @@ export default function VideoTrim({ initialFileId }: ToolProps) {
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(0);
   const [mode, setMode] = useState<Mode>("fast");
-  const { status, progress, error, result, run } = useRunner();
+  const { status, progress, error, result, run, cancel } = useRunner();
 
   useEffect(() => {
     setDuration(0);
@@ -48,13 +55,14 @@ export default function VideoTrim({ initialFileId }: ToolProps) {
 
   const startRun = () => {
     if (!picked) return;
-    void run("Video Kırp", async (onProgress) => {
+    void run("Video Kırp", async (onProgress, signal) => {
       const ffmpeg = await getFFmpeg();
       onProgress(0.08);
 
       const ext = ffmpegExtension(picked.file.name);
       const inputName = `input.${ext}`;
       await ffmpeg.writeFile(inputName, await fetchFile(picked.file));
+      assertFFmpegAlive(signal);
       onProgress(0.18);
 
       const outputExt = mode === "fast" ? ext : "mp4";
@@ -72,19 +80,18 @@ export default function VideoTrim({ initialFileId }: ToolProps) {
               outputName,
             ];
 
-      const onProgressEvent = ({ progress: ratio }: { progress: number }) => {
-        onProgress(0.2 + Math.min(1, Math.max(0, ratio)) * 0.75);
-      };
-      ffmpeg.on("progress", onProgressEvent);
       try {
-        const code = await ffmpeg.exec(args);
+        const code = await execFFmpeg(ffmpeg, args, {
+          signal,
+          onProgress: (ratio) => onProgress(0.2 + ratio * 0.75),
+        });
         if (code !== 0) throw new Error(`ffmpeg exit ${code}`);
       } catch (e) {
+        if (signal.aborted) throw e;
         throw new Error(t("videoTrim.error"));
-      } finally {
-        ffmpeg.off("progress", onProgressEvent);
       }
 
+      assertFFmpegAlive(signal);
       const data = await ffmpeg.readFile(outputName);
       const bytes =
         data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
@@ -100,12 +107,15 @@ export default function VideoTrim({ initialFileId }: ToolProps) {
   return (
     <div className="space-y-5">
       <ToolSection title={t("section.file")}>
-        <FileField
-          picked={picked}
-          acceptLabel={t("info.accept")}
-          onChoose={() => void choose()}
-          onClear={clear}
-        />
+        <div className="space-y-3">
+          <FileField
+            picked={picked}
+            acceptLabel={t("info.accept")}
+            onChoose={() => void choose()}
+            onClear={clear}
+          />
+          <SizeWarning bytes={picked?.file.size ?? 0} />
+        </div>
       </ToolSection>
 
       <ToolSection title={t("section.range")}>
@@ -166,6 +176,7 @@ export default function VideoTrim({ initialFileId }: ToolProps) {
         onRun={startRun}
         runLabel={t("videoTrim.run")}
         disabled={!picked || duration <= 0 || clipLength < 0.1}
+        onCancel={cancel}
       />
 
       {result && <OutputCard output={result} />}

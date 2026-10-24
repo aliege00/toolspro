@@ -16,13 +16,19 @@ import {
   ShieldIcon,
   TextIcon,
   LayersIcon,
+  RotateIcon,
+  WaveformIcon,
+  BatchIcon,
 } from "@/components/Icons";
 import VideoToMp3 from "./VideoToMp3";
 import VideoTrim from "./VideoTrim";
 import VideoJoin from "./VideoJoin";
 import VideoCompress from "./VideoCompress";
+import VideoRotate from "./VideoRotate";
 import OcrTool from "./OcrTool";
 import AudioTrim from "./AudioTrim";
+import AudioJoin from "./AudioJoin";
+import BatchConvert from "./BatchConvert";
 import ImageCompress from "./ImageCompress";
 import ImageConvert from "./ImageConvert";
 import ZipTool from "./ZipTool";
@@ -76,6 +82,13 @@ export const tools: ToolMeta[] = [
     component: VideoCompress,
   },
   {
+    id: "video-rotate",
+    titleKey: "tool.videoRotate.title",
+    descKey: "tool.videoRotate.desc",
+    icon: <RotateIcon size={24} />,
+    component: VideoRotate,
+  },
+  {
     id: "ocr",
     titleKey: "tool.ocr.title",
     descKey: "tool.ocr.desc",
@@ -88,6 +101,20 @@ export const tools: ToolMeta[] = [
     descKey: "tool.audioTrim.desc",
     icon: <ScissorsIcon size={24} />,
     component: AudioTrim,
+  },
+  {
+    id: "audio-join",
+    titleKey: "tool.audioJoin.title",
+    descKey: "tool.audioJoin.desc",
+    icon: <WaveformIcon size={24} />,
+    component: AudioJoin,
+  },
+  {
+    id: "batch",
+    titleKey: "tool.batch.title",
+    descKey: "tool.batch.desc",
+    icon: <BatchIcon size={24} />,
+    component: BatchConvert,
   },
   {
     id: "image-compress",

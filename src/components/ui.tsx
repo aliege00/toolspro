@@ -332,7 +332,15 @@ export function NavBar({
           )}
         </div>
         <div className="min-w-0 flex-1 text-center">
-          <h1 className="truncate text-[17px] font-semibold">{title}</h1>
+          <motion.h1
+            key={title}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            className="truncate text-[17px] font-semibold"
+          >
+            {title}
+          </motion.h1>
           {subtitle && <p className="truncate text-[12px] text-ink2">{subtitle}</p>}
         </div>
         <div className="flex min-w-[64px] items-center justify-end">{right}</div>

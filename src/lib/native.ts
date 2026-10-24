@@ -1,4 +1,5 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
+import type { PluginListenerHandle } from "@capacitor/core";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { triggerDownload } from "./files";
@@ -8,10 +9,36 @@ type PermissionsApi = {
   check: () => Promise<{ granted: boolean }>;
   requestCamera: () => Promise<{ granted: boolean }>;
   requestMic: () => Promise<{ granted: boolean }>;
+  requestNotifications: () => Promise<{ granted: boolean }>;
 };
 
 /** Uygulamanın kendi Capacitor eklentisi (android/MediaPermissionsPlugin). */
 export const MediaPermissions = registerPlugin<PermissionsApi>("MediaPermissions");
+
+export type AudioNotificationPayload = {
+  title: string;
+  duration: number;
+  position: number;
+  playing: boolean;
+};
+
+export type AudioNotificationAction = {
+  action: "play" | "pause" | "next" | "previous" | "seek";
+  position?: number;
+};
+
+type AudioNotificationApi = {
+  start: (options: AudioNotificationPayload) => Promise<void>;
+  update: (options: AudioNotificationPayload) => Promise<void>;
+  stop: () => Promise<void>;
+  addListener: (
+    event: "action",
+    listener: (data: AudioNotificationAction) => void,
+  ) => Promise<PluginListenerHandle>;
+};
+
+/** Kilit ekranı / bildirim medya kontrolleri (android/AudioNotificationPlugin). */
+export const AudioNotification = registerPlugin<AudioNotificationApi>("AudioNotification");
 
 export function isNative(): boolean {
   return Capacitor.isNativePlatform();
@@ -47,6 +74,17 @@ export async function requestMicAccess(): Promise<boolean> {
   if (!isNative()) return true;
   try {
     const res = await MediaPermissions.requestMic();
+    return res.granted;
+  } catch {
+    return false;
+  }
+}
+
+/** Bildirim izni (arka plan ses çalar) — Android 13+ için gerekir. */
+export async function requestNotificationAccess(): Promise<boolean> {
+  if (!isNative()) return true;
+  try {
+    const res = await MediaPermissions.requestNotifications();
     return res.granted;
   } catch {
     return false;

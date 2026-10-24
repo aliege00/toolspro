@@ -69,6 +69,34 @@ export const Pause = ({ size = 24, className }: IconProps) => (
   </svg>
 );
 
+export const SkipBack = ({ size = 24, className }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    aria-hidden="true"
+  >
+    <rect x="5" y="5" width="2.2" height="14" rx="1.1" />
+    <path d="M20 6.2v11.6c0 1-1.1 1.5-1.9 1l-9.2-5.8a1.2 1.2 0 0 1 0-2l9.2-5.8c.8-.5 1.9 0 1.9 1z" />
+  </svg>
+);
+
+export const SkipForward = ({ size = 24, className }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    aria-hidden="true"
+  >
+    <rect x="16.8" y="5" width="2.2" height="14" rx="1.1" />
+    <path d="M4 6.2v11.6c0 1 1.1 1.5 1.9 1l9.2-5.8a1.2 1.2 0 0 0 0-2L5.9 5.2C5.1 4.7 4 5.2 4 6.2z" />
+  </svg>
+);
+
 export const Back10 = (p: IconProps) => (
   <Icon {...p}>
     <path d="M3 4v6h6" />
@@ -394,6 +422,28 @@ export const ShieldIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M12 22s8-3.5 8-9.5V5.5L12 2.5 4 5.5V12.5C4 18.5 12 22 12 22z" />
     <path d="M9 12l2 2 4-4.5" />
+  </Icon>
+);
+
+export const RotateIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="5" y="5" width="14" height="14" rx="3" />
+    <path d="M5 9H2.8V6.8" />
+    <path d="M3 8.6A8 8 0 0 1 16.6 4.4" />
+  </Icon>
+);
+
+export const WaveformIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 12h1.5M7 8v8M11 5.5v13M15 9v6M19 6.5v11M22 12h-1.5" />
+  </Icon>
+);
+
+export const BatchIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3" y="3" width="10" height="10" rx="2.5" />
+    <rect x="11" y="11" width="10" height="10" rx="2.5" />
+    <path d="M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8" />
   </Icon>
 );
 

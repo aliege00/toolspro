@@ -37,6 +37,7 @@ import { useI18n, useT } from "@/i18n";
 import { sha256Hex } from "@/lib/media";
 import { hasPin, verifyPin } from "@/lib/security";
 import { displayName } from "@/lib/rename";
+import { useAudioActions } from "@/lib/audio";
 
 type Mode = "library" | "favorites" | "albums" | "hidden" | "trash";
 type Filter = "all" | Kind;
@@ -69,6 +70,7 @@ export default function FilesScreen() {
   const t = useT();
   const { lang } = useI18n();
   const { pop, push } = useNav();
+  const { playQueue, openPlayer } = useAudioActions();
   const {
     entries,
     trashed,
@@ -103,7 +105,6 @@ export default function FilesScreen() {
   const [wrongPin, setWrongPin] = useState(false);
 
   const [lightbox, setLightbox] = useState<Entry | null>(null);
-  const [audio, setAudio] = useState<Entry | null>(null);
   const [info, setInfo] = useState<Entry | null>(null);
   const [actions, setActions] = useState<Entry | null>(null);
 
@@ -203,8 +204,20 @@ export default function FilesScreen() {
 
   const open = (entry: Entry) => {
     if (entry.kind === "image") setLightbox(entry);
-    else if (entry.kind === "audio") setAudio(entry);
-    else if (entry.kind === "video") push({ name: "video", fileId: entry.id });
+    else if (entry.kind === "audio") {
+      const tracks = entries
+        .filter((item) => item.kind === "audio" && !hidden.includes(item.key))
+        .map((item) => ({
+          id: item.id,
+          title: item.name,
+          subtitle: t("audio.backgroundNote"),
+          url: item.url,
+        }));
+      playQueue(tracks.length > 0 ? tracks : [
+        { id: entry.id, title: entry.name, subtitle: t("audio.backgroundNote"), url: entry.url },
+      ], entry.id);
+      openPlayer();
+    } else if (entry.kind === "video") push({ name: "video", fileId: entry.id });
     else setInfo(entry);
   };
 
@@ -874,20 +887,6 @@ export default function FilesScreen() {
               <span>{t("files.storageTotal")}</span>
               <span>{formatBytes(storageTotal)}</span>
             </div>
-          </div>
-        )}
-      </Sheet>
-
-      {/* ---------- Audio preview ---------- */}
-      <Sheet open={!!audio} onClose={() => setAudio(null)} title={t("files.audioTitle")}>
-        {audio && (
-          <div>
-            <p className="mb-1 truncate text-[16px] font-semibold">{audio.name}</p>
-            <p className="mb-4 text-[13px] text-ink2">
-              {formatBytes(audio.size)} · {t(kindLabels[audio.kind])}
-            </p>
-            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <audio src={audio.url} controls className="w-full" autoPlay />
           </div>
         )}
       </Sheet>

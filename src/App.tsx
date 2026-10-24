@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion, MotionConfig } from "framer-motion";
+import { LaunchScreen } from "@/components/Brand";
+import { AudioMiniPlayer, AudioPlayerSheet } from "@/components/AudioPlayer";
+import { AudioProvider, useAudioActive } from "@/lib/audio";
 import { ThemeProvider } from "@/lib/theme";
 import { LocaleProvider } from "@/i18n";
 import { LibraryProvider } from "@/lib/library";
@@ -39,6 +42,7 @@ function routeKey(route: Route, depth: number): string {
 
 function Shell() {
   const { current, stack, direction } = useNav();
+  const audioActive = useAudioActive();
 
   return (
     <div className="relative h-full overflow-hidden bg-bg">
@@ -46,9 +50,10 @@ function Shell() {
         <motion.div
           key={routeKey(current, stack.length)}
           custom={direction}
-          initial={{ x: direction * 48, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: direction * -32, opacity: 0 }}
+          style={{ paddingBottom: audioActive ? 82 : 0 }}
+          initial={{ x: direction * 48, opacity: 0, scale: 0.995 }}
+          animate={{ x: 0, opacity: 1, scale: 1 }}
+          exit={{ x: direction * -32, opacity: 0, scale: 0.997 }}
           transition={{ type: "spring", stiffness: 420, damping: 40, mass: 0.9 }}
           className="no-scrollbar absolute inset-0 overflow-y-auto"
         >
@@ -83,15 +88,29 @@ function Gate() {
 }
 
 export default function App() {
+  const [launching, setLaunching] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLaunching(false), 950);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
-    <LocaleProvider>
-      <ThemeProvider>
-        <LibraryProvider>
-          <OutputsProvider>
-            <Gate />
-          </OutputsProvider>
-        </LibraryProvider>
-      </ThemeProvider>
-    </LocaleProvider>
+    <MotionConfig reducedMotion="user">
+      <LocaleProvider>
+        <AudioProvider>
+          <ThemeProvider>
+            <LibraryProvider>
+              <OutputsProvider>
+                <Gate />
+                <AudioMiniPlayer />
+                <AudioPlayerSheet />
+                <AnimatePresence>{launching && <LaunchScreen key="launch" />}</AnimatePresence>
+              </OutputsProvider>
+            </LibraryProvider>
+          </ThemeProvider>
+        </AudioProvider>
+      </LocaleProvider>
+    </MotionConfig>
   );
 }

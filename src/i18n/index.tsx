@@ -360,6 +360,49 @@ const tr = {
   "ocr.empty": "Görselde metin bulunamadı.",
   "ocr.error": "OCR çalıştırılamadı; dil paketi indirilememiş olabilir.",
   "ocr.onlineNote": "Türkçe ve İngilizce paketleri uygulamayla gelir; diğer diller ilk kullanımda indirilir (internet gerekir).",
+
+  "run.largeFile":
+    "Bu dosya {size}. Dosyalar işlem sırasında bellekte tutulur; büyük dosyalarda işlem uzun sürebilir veya cihazın belleği yetmeyebilir.",
+  "run.cancel": "İptal",
+  "run.cancelled": "İptal edildi.",
+
+  "audio.player": "Ses Çalar",
+  "audio.position": "Konum",
+  "audio.previous": "Önceki parça",
+  "audio.queue": "Sıradakiler",
+  "audio.backgroundNote": "Arka planda çalar; kilit ekranı ve bildirimden kontrol edilir.",
+  "audio.error":
+    "Bu ses dosyası oynatılamadı. Cihaz bu biçimi desteklemiyor olabilir.",
+
+  "tool.videoRotate.title": "Video Döndür",
+  "tool.videoRotate.desc": "Döndür veya ters çevir",
+  "tool.audioJoin.title": "Ses Birleştir",
+  "tool.audioJoin.desc": "Sesleri tek MP3 dosyasında birleştir",
+  "tool.batch.title": "Toplu Dönüştür",
+  "tool.batch.desc": "Birden çok dosyayı tek seferde işle",
+
+  "videoRotate.rotation": "Döndürme",
+  "videoRotate.flipH": "Yatay çevir",
+  "videoRotate.flipV": "Dikey çevir",
+  "videoRotate.note":
+    "Döndürme ve çevirme yeniden kodlanır; işlem süresi videonun süresine göre artar.",
+  "videoRotate.run": "Uygula",
+  "videoRotate.error": "Video döndürülemedi; codec desteklenmiyor olabilir.",
+
+  "audioJoin.need2": "Birleştirmek için en az iki dosya seç.",
+  "audioJoin.note":
+    "Dosyalar sırayla birleştirilir; farklı örnekleme oranları cihazda yeniden örneklenir. Çıktı MP3 (192 kbps) olur.",
+  "audioJoin.run": "Birleştir",
+  "audioJoin.error": "Ses birleştirilemedi; dosyaların sesi çözülemedi.",
+
+  "batch.mode": "İşlem",
+  "batch.images": "Görseller",
+  "batch.audio": "Ses → MP3",
+  "batch.note":
+    "Seçilen tüm dosyalar aynı ayarlarla işlenir; sonuç tek ZIP dosyası olarak hazırlanır.",
+  "batch.audioNote":
+    "Videoların sesi cihazda çözülür; uzun videolarda bellek kullanımı artar.",
+  "batch.run": "Toplu Dönüştür",
 } as const;
 
 export type TKey = keyof typeof tr;
@@ -722,6 +765,48 @@ const en: Record<TKey, string> = {
   "ocr.empty": "No text found in the image.",
   "ocr.error": "OCR failed; the language pack may not be downloaded.",
   "ocr.onlineNote": "Turkish and English packs ship with the app; other languages download on first use (internet required).",
+
+  "run.largeFile":
+    "This file is {size}. Files are held in memory while processing; large files can take a long time or exceed the device's memory.",
+  "run.cancel": "Cancel",
+  "run.cancelled": "Cancelled.",
+
+  "audio.player": "Audio Player",
+  "audio.position": "Position",
+  "audio.previous": "Previous track",
+  "audio.queue": "Up next",
+  "audio.backgroundNote": "Plays in the background; control it from the lock screen and notification.",
+  "audio.error": "This audio file could not be played. The device may not support its format.",
+
+  "tool.videoRotate.title": "Rotate Video",
+  "tool.videoRotate.desc": "Rotate or flip a video",
+  "tool.audioJoin.title": "Merge Audio",
+  "tool.audioJoin.desc": "Join clips into one MP3",
+  "tool.batch.title": "Batch Convert",
+  "tool.batch.desc": "Process several files at once",
+
+  "videoRotate.rotation": "Rotation",
+  "videoRotate.flipH": "Flip horizontally",
+  "videoRotate.flipV": "Flip vertically",
+  "videoRotate.note":
+    "Rotating and flipping re-encodes the video; processing time grows with the clip length.",
+  "videoRotate.run": "Apply",
+  "videoRotate.error": "Could not rotate the video; its codec may not be supported.",
+
+  "audioJoin.need2": "Pick at least two files to merge.",
+  "audioJoin.note":
+    "Files are joined in order; different sample rates are resampled on device. The output is MP3 (192 kbps).",
+  "audioJoin.run": "Merge",
+  "audioJoin.error": "Could not merge; the audio in these files could not be decoded.",
+
+  "batch.mode": "Action",
+  "batch.images": "Images",
+  "batch.audio": "Audio → MP3",
+  "batch.note":
+    "Every selected file uses the same settings; the result is packaged as a single ZIP.",
+  "batch.audioNote":
+    "Video audio is decoded on device; long videos use more memory.",
+  "batch.run": "Convert All",
 };
 
 const dictionaries: Record<Lang, Record<string, string>> = { tr, en };

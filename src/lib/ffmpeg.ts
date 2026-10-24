@@ -3,6 +3,23 @@ import type { FFmpeg } from "@ffmpeg/ffmpeg";
 let instance: FFmpeg | null = null;
 let loading: Promise<FFmpeg> | null = null;
 
+/** Büyük dosyalarda FFmpeg.wasm belleği zorlanabilir; bu eşikte uyarı gösterilir. */
+export const FFMPEG_WARN_BYTES = 200 * 1024 * 1024;
+
+export class FFmpegCancelledError extends Error {
+  constructor() {
+    super("İşlem iptal edildi.");
+    this.name = "FFmpegCancelledError";
+  }
+}
+
+export function isFFmpegCancelled(error: unknown): boolean {
+  return (
+    error instanceof FFmpegCancelledError ||
+    (error instanceof Error && error.name === "AbortError")
+  );
+}
+
 /**
  * FFmpeg.wasm'ı yalnızca bir kez, yerel paketlenmiş çekirdekle yükler.
  * Dosya public/ffmpeg/ altından gelir (scripts/prepare-assets.mjs kopyalar).
@@ -26,6 +43,61 @@ export function getFFmpeg(): Promise<FFmpeg> {
     });
   }
   return loading;
+}
+
+/**
+ * Çalışan FFmpeg işini gerçekten durdurur (worker sonlandırılır) ve bir sonraki
+ * çağrıda temiz bir örnek yüklenmesini sağlar.
+ */
+export function cancelFFmpeg(): void {
+  const current = instance;
+  instance = null;
+  loading = null;
+  try {
+    current?.terminate();
+  } catch {
+    // Worker zaten kapanmış olabilir.
+  }
+}
+
+export function assertFFmpegAlive(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new FFmpegCancelledError();
+}
+
+/**
+ * exec + ilerleme + iptal. AbortSignal tetiklendiğinde worker sonlandırılır;
+ * işlem FFmpegCancelledError ile biter.
+ */
+export async function execFFmpeg(
+  ffmpeg: FFmpeg,
+  args: string[],
+  options: {
+    onProgress?: (ratio: number) => void;
+    signal?: AbortSignal;
+    timeout?: number;
+  } = {},
+): Promise<number> {
+  const { onProgress, signal, timeout } = options;
+  assertFFmpegAlive(signal);
+
+  const onProgressEvent = ({ progress }: { progress: number }) => {
+    onProgress?.(Math.min(1, Math.max(0, progress)));
+  };
+  const onAbort = () => cancelFFmpeg();
+
+  ffmpeg.on("progress", onProgressEvent);
+  signal?.addEventListener("abort", onAbort, { once: true });
+  try {
+    const code = await ffmpeg.exec(args, timeout, { signal });
+    assertFFmpegAlive(signal);
+    return code;
+  } catch (error) {
+    if (signal?.aborted) throw new FFmpegCancelledError();
+    throw error;
+  } finally {
+    ffmpeg.off("progress", onProgressEvent);
+    signal?.removeEventListener("abort", onAbort);
+  }
 }
 
 export function ffmpegExtension(name: string): string {

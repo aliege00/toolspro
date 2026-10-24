@@ -39,13 +39,16 @@ export default function ToolsScreen() {
             <motion.button
               key={tool.id}
               type="button"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
+              layout
+              initial={{ opacity: 0, y: 16, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{
                 delay: Math.min(i, 10) * 0.04,
-                duration: 0.38,
-                ease: [0.22, 1, 0.36, 1],
+                type: "spring",
+                stiffness: 320,
+                damping: 26,
               }}
+              whileHover={{ y: -2 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => push({ name: "tool", id: tool.id })}
               className="flex h-[132px] flex-col items-start justify-between rounded-[18px] bg-card p-4 text-left shadow-[var(--shadow-card)] active:bg-card2"

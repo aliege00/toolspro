@@ -22,6 +22,18 @@ export const ACCENTS: { id: string; label: string; swatch: string }[] = [
 
 const APP_VERSION = "1.0.0";
 
+function rise(index: number) {
+  return {
+    initial: { opacity: 0, y: 14 },
+    animate: { opacity: 1, y: 0 },
+    transition: {
+      delay: 0.03 + index * 0.05,
+      duration: 0.4,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
+  };
+}
+
 type Flow = "create" | "change" | "remove";
 
 export default function Settings() {
@@ -77,7 +89,7 @@ export default function Settings() {
       <NavBar title={t("settings.title")} onBack={pop} />
 
       <div className="px-4 pt-4">
-        <section>
+        <motion.section {...rise(0)}>
           <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
             {t("settings.language")}
           </h2>
@@ -92,9 +104,9 @@ export default function Settings() {
               ]}
             />
           </div>
-        </section>
+        </motion.section>
 
-        <section className="mt-6">
+        <motion.section className="mt-6" {...rise(1)}>
           <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
             {t("settings.accent")}
           </h2>
@@ -122,9 +134,9 @@ export default function Settings() {
               ))}
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        <section className="mt-6">
+        <motion.section className="mt-6" {...rise(2)}>
           <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
             {t("settings.darkMode")}
           </h2>
@@ -135,9 +147,9 @@ export default function Settings() {
             </span>
             <Toggle checked={theme === "dark"} onChange={toggle} label={t("settings.darkMode")} />
           </div>
-        </section>
+        </motion.section>
 
-        <section className="mt-6">
+        <motion.section className="mt-6" {...rise(3)}>
           <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
             {t("settings.hidden")}
           </h2>
@@ -164,9 +176,9 @@ export default function Settings() {
               )}
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        <section className="mt-6">
+        <motion.section className="mt-6" {...rise(4)}>
           <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
             {t("settings.about")}
           </h2>
@@ -179,7 +191,7 @@ export default function Settings() {
           <p className="mt-2.5 px-1 text-[12.5px] leading-[1.45] text-ink3">
             {t("settings.note")}
           </p>
-        </section>
+        </motion.section>
       </div>
 
       <AnimatePresence>

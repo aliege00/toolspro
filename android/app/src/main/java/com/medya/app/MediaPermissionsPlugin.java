@@ -40,6 +40,10 @@ import com.getcapacitor.annotation.PermissionCallback;
         @Permission(
             alias = MediaPermissionsPlugin.MIC_ALIAS,
             strings = { Manifest.permission.RECORD_AUDIO }
+        ),
+        @Permission(
+            alias = MediaPermissionsPlugin.NOTIF_ALIAS,
+            strings = { Manifest.permission.POST_NOTIFICATIONS }
         )
     }
 )
@@ -49,6 +53,7 @@ public class MediaPermissionsPlugin extends Plugin {
     static final String STORAGE_ALIAS = "storage";
     static final String CAMERA_ALIAS = "camera";
     static final String MIC_ALIAS = "mic";
+    static final String NOTIF_ALIAS = "notifications";
 
     private String pendingAlias;
 
@@ -70,6 +75,16 @@ public class MediaPermissionsPlugin extends Plugin {
     @PluginMethod
     public void requestMic(PluginCall call) {
         requestForAlias(MIC_ALIAS, call);
+    }
+
+    /** Android 13+ bildirim izni; daha eski sürümlerde izin gerekmez. */
+    @PluginMethod
+    public void requestNotifications(PluginCall call) {
+        if (Build.VERSION.SDK_INT < 33) {
+            resolveGranted(call, true);
+            return;
+        }
+        requestForAlias(NOTIF_ALIAS, call);
     }
 
     private void requestForAlias(String alias, PluginCall call) {

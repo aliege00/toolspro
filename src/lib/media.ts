@@ -56,7 +56,9 @@ export async function encodeMp3(
   buffer: AudioBuffer,
   kbps: number,
   onProgress: (ratio: number) => void,
+  signal?: AbortSignal,
 ): Promise<Blob> {
+  if (signal?.aborted) throw new DOMException("İşlem iptal edildi.", "AbortError");
   const src = await ensureMp3SampleRate(buffer);
   const channels = Math.min(2, src.numberOfChannels);
   const encoder = new Mp3Encoder(channels, src.sampleRate, kbps);
@@ -75,6 +77,7 @@ export async function encodeMp3(
     if (encoded.length > 0) chunks.push(new Uint8Array(encoded));
 
     if (i % (blockSize * 400) === 0) {
+      if (signal?.aborted) throw new DOMException("İşlem iptal edildi.", "AbortError");
       onProgress(i / total);
       await yieldToUI();
     }
@@ -143,6 +146,53 @@ export function sliceBuffer(buffer: AudioBuffer, start: number, end: number): Au
   });
   for (let c = 0; c < buffer.numberOfChannels; c += 1) {
     out.copyToChannel(buffer.getChannelData(c).subarray(startFrame, endFrame), c);
+  }
+  return out;
+}
+
+/**
+ * Birden çok ses tamponunu sırayla birleştirir. Örnekleme oranı/kanal
+ * sayısı farklıysa tarayıcıda yeniden örneklenir.
+ */
+export async function concatAudioBuffers(
+  buffers: AudioBuffer[],
+  onProgress?: (ratio: number) => void,
+): Promise<AudioBuffer> {
+  if (buffers.length === 0) throw new Error("Birleştirilecek ses yok.");
+  const sampleRate = buffers[0].sampleRate;
+  const channels = Math.min(2, Math.max(...buffers.map((b) => b.numberOfChannels)));
+  const prepared: AudioBuffer[] = [];
+
+  for (let i = 0; i < buffers.length; i += 1) {
+    const buffer = buffers[i];
+    if (buffer.sampleRate === sampleRate && buffer.numberOfChannels === channels) {
+      prepared.push(buffer);
+    } else {
+      const length = Math.max(1, Math.ceil(buffer.duration * sampleRate));
+      const offline = new OfflineAudioContext(channels, length, sampleRate);
+      const source = offline.createBufferSource();
+      source.buffer = buffer;
+      source.connect(offline.destination);
+      source.start();
+      prepared.push(await offline.startRendering());
+    }
+    onProgress?.((i + 1) / buffers.length);
+  }
+
+  const total = prepared.reduce((sum, b) => sum + b.length, 0);
+  const out = new AudioBuffer({
+    numberOfChannels: channels,
+    length: Math.max(1, total),
+    sampleRate,
+  });
+
+  let offset = 0;
+  for (const buffer of prepared) {
+    for (let c = 0; c < channels; c += 1) {
+      const sourceChannel = Math.min(c, buffer.numberOfChannels - 1);
+      out.copyToChannel(buffer.getChannelData(sourceChannel), c, offset);
+    }
+    offset += buffer.length;
   }
   return out;
 }
