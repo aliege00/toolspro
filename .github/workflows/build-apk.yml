@@ -70,26 +70,26 @@ jobs:
       - name: Prepare APK artifacts
         run: |
           SHA="${GITHUB_SHA::7}"
-          cp android/app/build/outputs/apk/debug/app-debug.apk "Medya-debug-$SHA.apk"
-          cp android/app/build/outputs/apk/debug/app-debug.apk Medya-latest.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk "BeyTool-debug-$SHA.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk BeyTool-latest.apk
           if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            cp android/app/build/outputs/apk/release/app-release.apk "Medya-release-$SHA.apk"
-            cp android/app/build/outputs/apk/release/app-release.apk Medya-release-latest.apk
+            cp android/app/build/outputs/apk/release/app-release.apk "BeyTool-release-$SHA.apk"
+            cp android/app/build/outputs/apk/release/app-release.apk BeyTool-release-latest.apk
           fi
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: Medya-debug-apk
-          path: Medya-debug-*.apk
+          name: BeyTool-debug-apk
+          path: BeyTool-debug-*.apk
           if-no-files-found: error
 
       - name: Upload release APK
         if: ${{ env.HAS_RELEASE_KEYSTORE == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: Medya-release-apk
-          path: Medya-release-*.apk
+          name: BeyTool-release-apk
+          path: BeyTool-release-*.apk
           if-no-files-found: error
 
       - name: Move rolling latest tag
@@ -105,7 +105,7 @@ jobs:
         run: |
           for asset in $(gh release view latest --json assets --jq '.assets[].name' 2>/dev/null || true); do
             case "$asset" in
-              Medya-latest.apk|Medya-release-latest.apk) ;;
+              BeyTool-latest.apk|BeyTool-release-latest.apk) ;;
               *) gh release delete-asset latest "$asset" -y || true ;;
             esac
           done
@@ -119,5 +119,5 @@ jobs:
           prerelease: true
           make_latest: false
           files: |
-            Medya-latest.apk
-            Medya-release-latest.apk
+            BeyTool-latest.apk
+            BeyTool-release-latest.apk

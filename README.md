@@ -1,4 +1,4 @@
-# Medya
+# BeyTool
 
 Cihazda, çevrimdışı çalışan medya uygulaması: video oynatıcı, galeri tarzı dosya
 göz atma ve dönüştürme araçları.
@@ -27,7 +27,7 @@ yüklenmeden yapılır.
 Her push'ta GitHub Actions APK üretir:
 
 1. **Actions** sekmesindeki `Build APK` çalıştırmasını açın.
-2. `Medya-debug-apk` (veya eklenmişse `Medya-release-apk`) artifact'ini indirin.
+2. `BeyTool-debug-apk` (veya eklenmişse `BeyTool-release-apk`) artifact'ini indirin.
 3. `main` dalına push edildiğinde APK ayrıca **Releases → "En son APK"**
    (prerelease etiketi `latest`) sayfasına da eklenir.
 
@@ -46,7 +46,7 @@ ekleyin:
 | `ANDROID_KEY_PASSWORD` | Anahtar parolası |
 
 Secret'lar tanımlandığında akış `assembleRelease` de çalıştırıp imzalı APK'yi
-`Medya-release-<sha>.apk` adıyla artifact'e ve release'e ekler.
+`BeyTool-release-<sha>.apk` adıyla artifact'e ve release'e ekler.
 
 Yerel keystore üretimi:
 

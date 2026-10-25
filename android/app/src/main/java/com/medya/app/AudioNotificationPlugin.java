@@ -62,7 +62,7 @@ public class AudioNotificationPlugin extends Plugin {
     private void send(PluginCall call, String action) {
         Intent intent = new Intent(getContext(), AudioNotificationService.class);
         intent.setAction(action);
-        intent.putExtra("title", call.getString("title", "Medya"));
+        intent.putExtra("title", call.getString("title", "BeyTool"));
         Double duration = call.getDouble("duration", 0.0);
         Double position = call.getDouble("position", 0.0);
         intent.putExtra("duration", Math.round((duration != null ? duration : 0.0) * 1000));

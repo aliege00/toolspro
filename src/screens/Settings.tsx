@@ -184,7 +184,7 @@ export default function Settings() {
           </h2>
           <div className="rounded-[16px] bg-card px-4 py-3.5 shadow-[var(--shadow-card)]">
             <div className="flex items-center justify-between text-[15.5px]">
-              <span>Medya</span>
+              <span>BeyTool</span>
               <span className="text-ink2">{APP_VERSION}</span>
             </div>
           </div>

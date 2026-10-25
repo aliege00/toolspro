@@ -243,8 +243,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       if ("MediaMetadata" in window) {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: current.title,
-          artist: current.subtitle ?? "Medya",
-          album: "Medya",
+          artist: current.subtitle ?? "BeyTool",
+          album: "BeyTool",
         });
       }
       navigator.mediaSession.setActionHandler("play", () => void audio?.play());

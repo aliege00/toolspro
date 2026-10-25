@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Toggle } from "@/components/ui";
-import { MedyaMark } from "@/components/Brand";
+import { BeyToolMark } from "@/components/Brand";
 import {
   ChevronRight,
   FolderIcon,
@@ -71,7 +71,7 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              <MedyaMark size={40} />
+              <BeyToolMark size={40} />
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, y: 12 }}
@@ -79,7 +79,7 @@ export default function Home() {
               transition={{ delay: 0.04, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="text-[34px] leading-[1.05] font-bold"
             >
-              Medya
+              BeyTool
             </motion.h1>
           </div>
           <motion.p

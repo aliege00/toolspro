@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
  * Mat, iOS tarzı uygulama işareti: koyu grafit karo + fildişi play glifi.
  * Neon yok; yalnızca yumuşak gradyan ve ince kenar.
  */
-export function MedyaMark({
+export function BeyToolMark({
   size = 40,
   radius,
   className = "",
@@ -75,7 +75,7 @@ export function LaunchScreen() {
         transition={{ type: "spring", stiffness: 260, damping: 22, delay: 0.05 }}
         className="relative"
       >
-        <MedyaMark size={96} />
+        <BeyToolMark size={96} />
       </motion.div>
 
       <motion.p
@@ -84,7 +84,7 @@ export function LaunchScreen() {
         transition={{ delay: 0.24, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         className="mt-6 text-[22px] font-semibold tracking-[0.01em]"
       >
-        Medya
+        BeyTool
       </motion.p>
 
       <motion.span

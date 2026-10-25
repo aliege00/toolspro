@@ -49,7 +49,7 @@ public class AudioNotificationService extends Service {
 
     private MediaSessionCompat session;
     private boolean playing = false;
-    private String title = "Medya";
+    private String title = "BeyTool";
     private long durationMs = 0;
     private long positionMs = 0;
     private Bitmap largeIcon;
@@ -59,7 +59,7 @@ public class AudioNotificationService extends Service {
         super.onCreate();
         createChannel();
         largeIcon = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
-        session = new MediaSessionCompat(this, "MedyaAudio");
+        session = new MediaSessionCompat(this, "BeyToolAudio");
         session.setCallback(new MediaSessionCompat.Callback() {
             @Override
             public void onPlay() {
@@ -121,7 +121,7 @@ public class AudioNotificationService extends Service {
         } else {
             // START / UPDATE: JS'ten gelen gerçek durum
             title = intent.getStringExtra("title");
-            if (title == null || title.isEmpty()) title = "Medya";
+            if (title == null || title.isEmpty()) title = "BeyTool";
             durationMs = intent.getLongExtra("duration", durationMs);
             positionMs = intent.getLongExtra("position", positionMs);
             playing = intent.getBooleanExtra("playing", playing);
@@ -198,7 +198,7 @@ public class AudioNotificationService extends Service {
 
         MediaMetadataCompat metadata = new MediaMetadataCompat.Builder()
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
-            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Medya")
+            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "BeyTool")
             .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationMs)
             .build();
         session.setMetadata(metadata);
@@ -235,7 +235,7 @@ public class AudioNotificationService extends Service {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_medya)
             .setContentTitle(title)
-            .setContentText("Medya")
+            .setContentText("BeyTool")
             .setContentIntent(contentIntent)
             .setOnlyAlertOnce(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

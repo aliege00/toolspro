@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Sheet, Slider } from "@/components/ui";
-import { MedyaMark } from "@/components/Brand";
+import { BeyToolMark } from "@/components/Brand";
 import {
   MusicIcon,
   Pause,
@@ -50,7 +50,7 @@ export function AudioMiniPlayer() {
             onClick={openPlayer}
             className="flex min-w-0 flex-1 items-center gap-3 py-2.5 pl-2.5 text-left active:opacity-70"
           >
-            <MedyaMark size={38} />
+            <BeyToolMark size={38} />
             <div className="min-w-0">
               <p className="truncate text-[14px] font-semibold">{current.title}</p>
               <p className="truncate text-[11.5px] text-ink2">
@@ -125,7 +125,7 @@ export function AudioPlayerSheet() {
                     : { duration: 0.3 }
                 }
               >
-                <MedyaMark size={84} radius={20} />
+                <BeyToolMark size={84} radius={20} />
               </motion.div>
               <span className="absolute right-3 bottom-3 text-ink3">
                 <MusicIcon size={18} />
