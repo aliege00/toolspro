@@ -83,9 +83,22 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
   const { theme } = useTheme();
   const { pop, push } = useNav();
   const { entries, addFiles, remove, hidden } = useLibrary();
+
+  // Oynatıcı tüm videoları tanır; gizli olanlar da aynı yoldan açılır.
+  const allVideos = useMemo(
+    () => entries.filter((e) => e.kind === "video"),
+    [entries],
+  );
+  const startVideo = useMemo(
+    () => (fileId ? allVideos.find((v) => v.id === fileId) ?? null : null),
+    [fileId, allVideos],
+  );
+  // Sıra listesi, videonun açıldığı klasörün kapsamını korur:
+  // gizli klasörden açılan video yalnızca gizli videolar arasında ilerler.
+  const startHidden = startVideo ? hidden.includes(startVideo.key) : false;
   const videos = useMemo(
-    () => entries.filter((e) => e.kind === "video" && !hidden.includes(e.key)),
-    [entries, hidden],
+    () => allVideos.filter((e) => hidden.includes(e.key) === startHidden),
+    [allVideos, hidden, startHidden],
   );
 
   const [currentId, setCurrentId] = useState<string | null>(fileId ?? null);
@@ -94,8 +107,8 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
       const found = videos.find((v) => v.id === currentId);
       if (found) return found;
     }
-    return videos[0] ?? null;
-  }, [currentId, videos]);
+    return startVideo ?? videos[0] ?? null;
+  }, [currentId, videos, startVideo]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
