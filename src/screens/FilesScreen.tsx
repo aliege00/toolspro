@@ -288,7 +288,7 @@ export default function FilesScreen() {
           ) : entry.kind === "video" ? (
             <Thumb entry={entry} />
           ) : entry.kind === "audio" ? (
-            <div className="flex h-full w-full items-center justify-center bg-tint2 text-tint">
+            <div className="flex h-full w-full items-center justify-center bg-tile text-tile-ink">
               <MusicIcon size={30} />
             </div>
           ) : (
@@ -930,7 +930,7 @@ function ActionRow({
         danger ? "text-danger" : "text-ink"
       }`}
     >
-      <span className={danger ? "text-danger" : "text-tint"}>{icon}</span>
+      <span className={danger ? "text-danger" : "text-ink2"}>{icon}</span>
       {label}
     </button>
   );

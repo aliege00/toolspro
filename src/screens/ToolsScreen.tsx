@@ -53,7 +53,7 @@ export default function ToolsScreen() {
               onClick={() => push({ name: "tool", id: tool.id })}
               className="flex h-[132px] flex-col items-start justify-between rounded-[18px] bg-card p-4 text-left shadow-[var(--shadow-card)] active:bg-card2"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-tint2 text-tint">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-tile text-tile-ink">
                 {tool.icon}
               </div>
               <div>

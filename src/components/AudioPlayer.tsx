@@ -115,7 +115,7 @@ export function AudioPlayerSheet() {
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 24 }}
-              className="relative flex h-[170px] w-[170px] items-center justify-center overflow-hidden rounded-[28px] border border-white/5 bg-gradient-to-b from-card2 to-fill shadow-[var(--shadow-card)]"
+              className="relative flex h-[170px] w-[170px] items-center justify-center overflow-hidden rounded-[28px] border border-white/5 bg-fill shadow-[var(--shadow-card)]"
             >
               <motion.div
                 animate={playing ? { scale: [1, 1.035, 1] } : { scale: 1 }}
@@ -156,7 +156,7 @@ export function AudioPlayerSheet() {
               whileTap={{ scale: 0.88 }}
               onClick={cycleRepeat}
               className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                repeat === "off" ? "text-ink3" : "bg-tint2 text-tint"
+                repeat === "off" ? "text-ink3" : "bg-fill text-ink"
               }`}
               aria-label={t("video.repeat")}
             >
@@ -227,22 +227,22 @@ export function AudioPlayerSheet() {
                       type="button"
                       onClick={() => playQueue(queue, track.id)}
                       className={`flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left active:opacity-70 ${
-                        active ? "bg-tint2" : "bg-fill"
+                        active ? "bg-tile" : "bg-fill"
                       }`}
                     >
                       <MusicIcon
                         size={17}
-                        className={active ? "shrink-0 text-tint" : "shrink-0 text-ink3"}
+                        className={active ? "shrink-0 text-ink" : "shrink-0 text-ink3"}
                       />
                       <span className="min-w-0 flex-1 truncate text-[13.5px]">
                         {track.title}
                       </span>
                       {active && playing && (
-                        <span className="flex items-end gap-[2px] text-tint" aria-hidden>
+                        <span className="flex items-end gap-[2px] text-ink2" aria-hidden>
                           {[0, 1, 2].map((bar) => (
                             <motion.span
                               key={bar}
-                              className="w-[2.5px] rounded-full bg-tint"
+                              className="w-[2.5px] rounded-full bg-ink2"
                               animate={{ height: [5, 12, 7] }}
                               transition={{
                                 duration: 0.9 + bar * 0.18,

@@ -99,7 +99,7 @@ export default function PinPad({
                 type="button"
                 whileTap={{ scale: 0.92 }}
                 onClick={() => press(key)}
-                className="h-16 rounded-full bg-fill text-[26px] font-medium active:bg-tint2"
+                className="h-16 rounded-full bg-fill text-[26px] font-medium active:bg-card2"
               >
                 {key}
               </motion.button>

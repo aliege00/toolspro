@@ -234,7 +234,7 @@ export function FileField({
           onClick={onChoose}
           className="flex w-full items-center gap-3 rounded-[14px] border border-dashed border-line px-4 py-5 text-left active:bg-fill"
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-fill text-tint">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-tile text-tile-ink">
             <FileIcon size={22} />
           </div>
           <div>
@@ -351,7 +351,7 @@ export function OutputCard({ output }: { output: Output }) {
       className="rounded-[16px] bg-card p-4 shadow-[var(--shadow-card)]"
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-tint2 text-tint">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-tile text-tile-ink">
           {kindIcons[output.kind]}
         </div>
         <div className="min-w-0 flex-1">

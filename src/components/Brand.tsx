@@ -75,8 +75,7 @@ export function LaunchScreen() {
         transition={{ type: "spring", stiffness: 260, damping: 22, delay: 0.05 }}
         className="relative"
       >
-        <div className="absolute -inset-8 rounded-full bg-fill/40 blur-2xl" aria-hidden />
-        <MedyaMark size={96} className="relative" />
+        <MedyaMark size={96} />
       </motion.div>
 
       <motion.p

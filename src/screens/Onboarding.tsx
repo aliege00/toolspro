@@ -51,7 +51,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
           initial={{ opacity: 0, scale: 0.9, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 22 }}
-          className="mb-7 flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-tint2 text-tint"
+          className="mb-7 flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-tile text-tile-ink"
         >
           <ShieldIcon size={38} strokeWidth={1.6} />
         </motion.div>
@@ -87,7 +87,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
               }}
               className="flex items-center gap-3.5 rounded-[16px] bg-card px-4 py-3.5 shadow-[var(--shadow-card)]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-fill text-ink">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] bg-tile text-tile-ink">
                 {row.icon}
               </div>
               <div className="min-w-0">

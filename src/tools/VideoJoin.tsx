@@ -107,7 +107,7 @@ export default function VideoJoin() {
             onClick={() => void addFiles()}
             className="flex w-full items-center gap-3 rounded-[14px] border border-dashed border-line px-4 py-5 text-left active:bg-fill"
           >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-fill text-tint">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-tile text-tile-ink">
               <FileIcon size={22} />
             </div>
             <div>

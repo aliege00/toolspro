@@ -767,7 +767,7 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ type: "spring", stiffness: 320, damping: 30 }}
                       className={`flex items-center gap-3 rounded-[14px] p-2 pr-1 transition-colors ${
-                        active ? "bg-tint2" : "bg-card"
+                        active ? "bg-fill" : "bg-card"
                       }`}
                     >
                       <button
@@ -787,7 +787,7 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
                         </div>
                       </button>
                       {active && (
-                        <span className="shrink-0 text-[12px] font-semibold text-tint">
+                        <span className="shrink-0 text-[12px] font-semibold text-ink2">
                           {playing ? t("video.playing") : t("video.selected")}
                         </span>
                       )}

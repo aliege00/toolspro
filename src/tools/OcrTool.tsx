@@ -123,7 +123,7 @@ export default function OcrTool() {
               className="h-14 w-14 shrink-0 rounded-[10px] object-cover"
             />
           ) : (
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10px] bg-fill text-tint text-[13px] font-semibold">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10px] bg-tile text-tile-ink text-[13px] font-semibold">
               PNG
             </div>
           )}

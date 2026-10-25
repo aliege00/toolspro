@@ -143,7 +143,7 @@ export default function RenameTool() {
         <motion.p
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-[12px] bg-tint2 px-4 py-3 text-center text-[14px] font-medium text-tint"
+          className="rounded-[12px] bg-fill px-4 py-3 text-center text-[14px] font-medium text-ink2"
         >
           {toast}
         </motion.p>

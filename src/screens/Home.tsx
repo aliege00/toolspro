@@ -63,14 +63,6 @@ export default function Home() {
 
   return (
     <div className="safe-top safe-bottom relative min-h-full overflow-hidden px-5 pb-10">
-      <motion.div
-        aria-hidden
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-none absolute -top-24 -right-16 h-64 w-64 rounded-full bg-tint2 blur-3xl"
-      />
-
       <div className="relative flex items-start justify-between pt-4 pb-8">
         <div>
           <div className="flex items-center gap-2.5">
@@ -137,7 +129,7 @@ export default function Home() {
                 show: { scale: 1, opacity: 1 },
               }}
               transition={{ type: "spring", stiffness: 320, damping: 22 }}
-              className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[16px] bg-tint2 text-tint"
+              className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[16px] bg-tile text-tile-ink"
             >
               {entry.icon}
             </motion.div>
@@ -178,7 +170,7 @@ export default function Home() {
         className="mt-10 flex items-center justify-center gap-1.5 text-[12px] text-ink3"
       >
         <motion.span
-          className="h-1.5 w-1.5 rounded-full bg-success"
+          className="h-1.5 w-1.5 rounded-full bg-ink3"
           animate={{ opacity: [0.35, 1, 0.35] }}
           transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
         />
