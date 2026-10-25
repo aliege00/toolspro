@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.medya.app",
+  appId: "com.BeyTool.app",
   appName: "BeyTool",
   webDir: "dist",
   server: {

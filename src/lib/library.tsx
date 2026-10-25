@@ -2,6 +2,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from "react";
 import { detectKind, newId } from "./files";
 import type { Kind } from "./files";
+import {
+  deleteStored,
+  extensionOf,
+  loadLibraryIndex,
+  persistBlob,
+  readStoredBlob,
+  saveLibraryIndex,
+} from "./storage";
+import type { LibraryIndex, PersistedEntry } from "./storage";
 
 export type Entry = {
   id: string;
@@ -13,6 +22,10 @@ export type Entry = {
   size: number;
   folder: string;
   addedAt: number;
+  /** Özel depodaki kalıcı yol; yoksa dosya yalnızca bu oturumda geçerlidir. */
+  path?: string;
+  persisted?: boolean;
+  trashedAt?: number;
 };
 
 export type Album = {
@@ -63,6 +76,34 @@ function saveJSON(storageKey: string, value: unknown) {
   }
 }
 
+function toPersisted(entry: Entry): PersistedEntry | null {
+  if (!entry.path) return null;
+  return {
+    id: entry.id,
+    key: entry.key,
+    name: entry.name,
+    size: entry.size,
+    type: entry.file.type || "application/octet-stream",
+    kind: entry.kind,
+    folder: entry.folder,
+    addedAt: entry.addedAt,
+    lastModified: entry.file.lastModified || Date.now(),
+    path: entry.path,
+    deletedAt: entry.trashedAt,
+  };
+}
+
+function toTrashRecord(entry: Entry): TrashRecord {
+  return {
+    key: entry.key,
+    name: entry.name,
+    size: entry.size,
+    kind: entry.kind,
+    folder: entry.folder,
+    deletedAt: entry.trashedAt ?? Date.now(),
+  };
+}
+
 type LibraryCtx = {
   entries: Entry[];
   trashed: Entry[];
@@ -74,6 +115,10 @@ type LibraryCtx = {
   restore: (key: string) => boolean;
   purgeTrash: () => void;
   purgeExpired: () => void;
+
+  hydrating: boolean;
+  storageError: string | null;
+  dismissStorageError: () => void;
 
   favorites: string[];
   toggleFavorite: (key: string) => void;
@@ -92,9 +137,9 @@ const Ctx = createContext<LibraryCtx | null>(null);
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [trashed, setTrashed] = useState<Entry[]>([]);
-  const [trashRecords, setTrashRecords] = useState<TrashRecord[]>(() =>
-    loadJSON<TrashRecord[]>("medya.trash", []),
-  );
+  const [trashRecords, setTrashRecords] = useState<TrashRecord[]>([]);
+  const [hydrating, setHydrating] = useState(true);
+  const [storageError, setStorageError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>(() =>
     loadJSON<string[]>("medya.favorites", []),
   );
@@ -106,37 +151,148 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   );
 
   const seen = useRef(new Set<string>());
+  const objectUrls = useRef(new Set<string>());
+  const hydrated = useRef(false);
+  const entriesRef = useRef<Entry[]>([]);
+  const trashedRef = useRef<Entry[]>([]);
+  entriesRef.current = entries;
+  trashedRef.current = trashed;
 
-  useEffect(() => saveJSON("medya.trash", trashRecords), [trashRecords]);
   useEffect(() => saveJSON("medya.favorites", favorites), [favorites]);
   useEffect(() => saveJSON("medya.hidden", hidden), [hidden]);
   useEffect(() => saveJSON("medya.albums", albums), [albums]);
 
+  // Dosyaları özel depodan geri yükle. Gizli dosyalar da aynı yolu kullanır;
+  // gizlilik yalnızca bir anahtar işaretidir, ayrı bir depolama alanı yoktur.
+  useEffect(() => {
+    let alive = true;
+    const urls: string[] = [];
+
+    const loadOne = async (record: PersistedEntry): Promise<Entry | null> => {
+      try {
+        const blob = await readStoredBlob(record.path, record.type);
+        const file = new File([blob], record.name, {
+          type: record.type,
+          lastModified: record.lastModified,
+        });
+        const url = URL.createObjectURL(file);
+        urls.push(url);
+        objectUrls.current.add(url);
+        seen.current.add(record.key);
+        return {
+          id: record.id,
+          key: record.key,
+          file,
+          url,
+          kind: record.kind,
+          name: record.name,
+          size: record.size || file.size,
+          folder: record.folder,
+          addedAt: record.addedAt,
+          path: record.path,
+          persisted: true,
+          trashedAt: record.deletedAt,
+        };
+      } catch {
+        return null;
+      }
+    };
+
+    void (async () => {
+      const index = await loadLibraryIndex();
+      const loadedEntries: Entry[] = [];
+      const loadedTrash: Entry[] = [];
+
+      for (const record of index.entries) {
+        if (!alive) break;
+        const entry = await loadOne(record);
+        if (entry) loadedEntries.push(entry);
+      }
+      for (const record of index.trash) {
+        if (!alive) break;
+        const entry = await loadOne(record);
+        if (entry) {
+          loadedTrash.push(entry);
+          // Çöp kutusundaki dosya yeniden seçilebilsin diye tekrar engellenmez.
+          seen.current.delete(record.key);
+        }
+      }
+
+      if (!alive) {
+        for (const url of urls) URL.revokeObjectURL(url);
+        return;
+      }
+
+      // Yükleme sırasında eklenen dosyaları ezme; anahtara göre birleştir.
+      setEntries((current) => {
+        const keys = new Set(current.map((entry) => entry.key));
+        return [...current, ...loadedEntries.filter((entry) => !keys.has(entry.key))];
+      });
+      setTrashed((current) => {
+        const keys = new Set(current.map((entry) => entry.key));
+        return [...current, ...loadedTrash.filter((entry) => !keys.has(entry.key))];
+      });
+      setTrashRecords((current) => {
+        const keys = new Set(current.map((record) => record.key));
+        return [...current, ...index.trashRecords.filter((record) => !keys.has(record.key))];
+      });
+      hydrated.current = true;
+      setHydrating(false);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(
+    () => () => {
+      for (const url of objectUrls.current) URL.revokeObjectURL(url);
+    },
+    [],
+  );
+
+  // Kitaplık dizinini JSON olarak diske yaz (gecikmeli, her tuşta değil).
+  useEffect(() => {
+    if (!hydrated.current) return;
+    const timer = window.setTimeout(() => {
+      const index: LibraryIndex = {
+        version: 2,
+        entries: entries
+          .map(toPersisted)
+          .filter((entry): entry is PersistedEntry => !!entry),
+        trash: trashed
+          .map(toPersisted)
+          .filter((entry): entry is PersistedEntry => !!entry),
+        trashRecords,
+      };
+      void saveLibraryIndex(index).catch((error) => {
+        setStorageError(error instanceof Error ? error.message : "Kitaplık yazılamadı.");
+      });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [entries, trashed, trashRecords]);
+
   const purgeExpired = useCallback(() => {
     const cutoff = Date.now() - TRASH_DAYS * 24 * 60 * 60 * 1000;
-    setTrashRecords((records) => {
-      const kept = records.filter((r) => r.deletedAt >= cutoff);
-      const expiredKeys = new Set(
-        records.filter((r) => r.deletedAt < cutoff).map((r) => r.key),
-      );
-      if (expiredKeys.size > 0) {
-        setTrashed((current) => {
-          for (const entry of current) {
-            if (expiredKeys.has(entry.key)) {
-              URL.revokeObjectURL(entry.url);
-              seen.current.delete(entry.key);
-            }
-          }
-          return current.filter((e) => !expiredKeys.has(e.key));
-        });
-      }
-      return kept;
-    });
+    const expired = trashedRef.current.filter((entry) => (entry.trashedAt ?? 0) < cutoff);
+    if (expired.length === 0) return;
+    for (const entry of expired) {
+      URL.revokeObjectURL(entry.url);
+      seen.current.delete(entry.key);
+      if (entry.path) void deleteStored(entry.path);
+    }
+    const keys = new Set(expired.map((entry) => entry.key));
+    setTrashed((current) => current.filter((entry) => !keys.has(entry.key)));
+    setTrashRecords((records) => [
+      ...expired.map((entry) => ({ ...toTrashRecord(entry), deletedAt: cutoff })),
+      ...records,
+    ]);
   }, []);
 
   useEffect(() => {
-    purgeExpired();
-  }, [purgeExpired]);
+    if (!hydrating) purgeExpired();
+  }, [hydrating, purgeExpired]);
 
   const addFiles = useCallback((files: File[]) => {
     const fresh: Entry[] = [];
@@ -156,94 +312,112 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         addedAt: Date.now(),
       });
     }
-    if (fresh.length > 0) {
-      setEntries((prev) => [...fresh, ...prev]);
-      // çöp kutusundaki kayıt varsa kaldır (geri geldi)
-      setTrashRecords((records) =>
-        records.filter((r) => !fresh.some((f) => f.key === r.key)),
-      );
-      setTrashed((records) =>
-        records.filter((r) => !fresh.some((f) => f.key === r.key)),
-      );
+    if (fresh.length === 0) return fresh;
+
+    const freshKeys = new Set(fresh.map((entry) => entry.key));
+    const duplicatesInTrash = trashedRef.current.filter((entry) =>
+      freshKeys.has(entry.key),
+    );
+    for (const duplicate of duplicatesInTrash) {
+      URL.revokeObjectURL(duplicate.url);
+      if (duplicate.path) void deleteStored(duplicate.path);
     }
+    if (duplicatesInTrash.length > 0) {
+      setTrashed((current) => current.filter((entry) => !freshKeys.has(entry.key)));
+    }
+    setTrashRecords((records) =>
+      records.filter((record) => !freshKeys.has(record.key)),
+    );
+
+    setEntries((prev) => [...fresh, ...prev]);
+
+    // Dosyaları uygulamanın özel depolamasına kopyala; gizli klasör dahil.
+    for (const entry of fresh) {
+      void (async () => {
+        try {
+          const path = await persistBlob(
+            entry.file,
+            `${entry.id}.${extensionOf(entry.name)}`,
+          );
+          setEntries((prev) =>
+            prev.map((item) =>
+              item.id === entry.id ? { ...item, path, persisted: true } : item,
+            ),
+          );
+          setTrashed((prev) =>
+            prev.map((item) =>
+              item.id === entry.id ? { ...item, path, persisted: true } : item,
+            ),
+          );
+        } catch (error) {
+          setStorageError(
+            error instanceof Error
+              ? error.message
+              : "Dosya kalıcı depoya kopyalanamadı.",
+          );
+        }
+      })();
+    }
+
     return fresh;
   }, []);
 
   const byId = useCallback(
-    (id: string) => entries.find((e) => e.id === id),
+    (id: string) => entries.find((entry) => entry.id === id),
     [entries],
   );
 
   const remove = useCallback((id: string) => {
-    setEntries((prev) => {
-      const target = prev.find((e) => e.id === id);
-      if (target) {
-        URL.revokeObjectURL(target.url);
-        seen.current.delete(target.key);
-      }
-      return prev.filter((e) => e.id !== id);
-    });
+    const target = entriesRef.current.find((entry) => entry.id === id);
+    if (!target) return;
+    URL.revokeObjectURL(target.url);
+    seen.current.delete(target.key);
+    setEntries((prev) => prev.filter((entry) => entry.id !== id));
+    if (target.path) void deleteStored(target.path);
   }, []);
 
-  const trash = useCallback(
-    (id: string) => {
-      let moved: Entry | undefined;
-      setEntries((prev) => {
-        moved = prev.find((e) => e.id === id);
-        return prev.filter((e) => e.id !== id);
-      });
-      if (!moved) return false;
-      setTrashed((prev) => [moved!, ...prev]);
-      setTrashRecords((prev) => [
-        {
-          key: moved!.key,
-          name: moved!.name,
-          size: moved!.size,
-          kind: moved!.kind,
-          folder: moved!.folder,
-          deletedAt: Date.now(),
-        },
-        ...prev.filter((r) => r.key !== moved!.key),
-      ]);
-      return true;
-    },
-    [],
-  );
+  const trash = useCallback((id: string) => {
+    const target = entriesRef.current.find((entry) => entry.id === id);
+    if (!target) return false;
+    const moved: Entry = { ...target, trashedAt: Date.now() };
+    seen.current.delete(target.key);
+    setEntries((prev) => prev.filter((entry) => entry.id !== id));
+    setTrashed((prev) => [moved, ...prev]);
+    return true;
+  }, []);
 
   const restore = useCallback((key: string) => {
-    let restored: Entry | undefined;
-    setTrashed((prev) => {
-      restored = prev.find((e) => e.key === key);
-      return prev.filter((e) => e.key !== key);
-    });
-    if (restored) {
-      setEntries((prev) => [restored!, ...prev]);
-      setTrashRecords((records) => records.filter((r) => r.key !== key));
-      return true;
-    }
-    return false;
+    const target = trashedRef.current.find((entry) => entry.key === key);
+    if (!target) return false;
+    const restored: Entry = { ...target, trashedAt: undefined };
+    setTrashed((prev) => prev.filter((entry) => entry.key !== key));
+    setEntries((prev) => [restored, ...prev]);
+    seen.current.add(restored.key);
+    return true;
   }, []);
 
   const purgeTrash = useCallback(() => {
-    setTrashed((prev) => {
-      for (const entry of prev) {
-        URL.revokeObjectURL(entry.url);
-        seen.current.delete(entry.key);
-      }
-      return [];
-    });
-    setTrashRecords([]);
+    const targets = trashedRef.current;
+    for (const entry of targets) {
+      URL.revokeObjectURL(entry.url);
+      seen.current.delete(entry.key);
+      if (entry.path) void deleteStored(entry.path);
+    }
+    setTrashed([]);
+    if (targets.length > 0) {
+      setTrashRecords((records) => [...targets.map(toTrashRecord), ...records]);
+    }
   }, []);
 
   const toggleFavorite = useCallback((key: string) => {
     setFavorites((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [key, ...prev],
+      prev.includes(key) ? prev.filter((item) => item !== key) : [key, ...prev],
     );
   }, []);
 
   const toggleHidden = useCallback((key: string) => {
     setHidden((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [key, ...prev],
+      prev.includes(key) ? prev.filter((item) => item !== key) : [key, ...prev],
     );
   }, []);
 
@@ -265,8 +439,10 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteAlbum = useCallback((albumId: string) => {
-    setAlbums((prev) => prev.filter((a) => a.id !== albumId));
+    setAlbums((prev) => prev.filter((album) => album.id !== albumId));
   }, []);
+
+  const dismissStorageError = useCallback(() => setStorageError(null), []);
 
   const value = useMemo(
     () => ({
@@ -280,6 +456,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       restore,
       purgeTrash,
       purgeExpired,
+      hydrating,
+      storageError,
+      dismissStorageError,
       favorites,
       toggleFavorite,
       hidden,
@@ -300,6 +479,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       restore,
       purgeTrash,
       purgeExpired,
+      hydrating,
+      storageError,
+      dismissStorageError,
       favorites,
       toggleFavorite,
       hidden,
@@ -319,3 +501,4 @@ export function useLibrary() {
   if (!ctx) throw new Error("useLibrary must be used within LibraryProvider");
   return ctx;
 }
+

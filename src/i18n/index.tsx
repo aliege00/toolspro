@@ -94,6 +94,9 @@ const tr = {
   "files.emptyTitle": "Burada henüz dosya yok",
   "files.emptyDesc":
     "Klasör seçerek galeri gibi göz atabilir veya tek tek dosya ekleyebilirsin.",
+  "files.loading": "Kitaplık yükleniyor…",
+  "files.storageError": "Dosyalar kalıcı depoya yazılamadı: {message}",
+  "files.storageErrorDismiss": "Kapat",
   "files.audioTitle": "Ses Önizleme",
   "files.infoTitle": "Dosya Özeti",
   "kind.video": "Video",
@@ -498,6 +501,9 @@ const en: Record<TKey, string> = {
   "files.emptyTitle": "No files here yet",
   "files.emptyDesc":
     "Pick a folder to browse like a gallery, or add files one by one.",
+  "files.loading": "Loading library…",
+  "files.storageError": "Could not write files to app storage: {message}",
+  "files.storageErrorDismiss": "Dismiss",
   "files.audioTitle": "Audio Preview",
   "files.infoTitle": "File Info",
   "kind.video": "Video",

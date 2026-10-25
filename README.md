@@ -65,13 +65,18 @@ bun run build      # tsc + vite build → dist/
 bunx cap sync android   # web derlemesini Android projesine kopyalar
 ```
 
-Android kaynak kodu `android/` klasöründedir. Uygulamanın kendi izin eklentisi
-`android/app/src/main/java/com/medya/app/MediaPermissionsPlugin.java` dosyasında
-tanımlıdır ve `MainActivity` içinde kaydedilir.
+Android kaynak kodu `android/` klasöründedir. Paket kimliği `com.BeyTool.app`.
+Uygulamanın kendi izin eklentisi
+`android/app/src/main/java/com/BeyTool/app/MediaPermissionsPlugin.java`
+dosyasında tanımlıdır ve `MainActivity` içinde kaydedilir.
 
 ## Notlar
 
-- Dosyalar oturum içi tutulur; uygulama kapatıldığında seçim listesi sıfırlanır.
+- Seçilen dosyalar uygulamanın özel depolamasına (`beytool/library`) kopyalanır;
+  kitaplık uygulama kapatılıp açıldığında geri yüklenir. Gizli klasördeki
+  dosyalar da aynı yolu kullanır. Kopyalama base64 üzerinden yapıldığı için çok
+  büyük kitaplıklarda açılış yavaşlayabilir ve bellek kullanımı artabilir.
+- Editör projeleri `beytool/projects` altında JSON olarak otomatik kaydedilir.
 - MP3 çıkarma, cihazın WebAudio çözücüsüyle çalışır. Çözümleyemediği codec'ler
   için araç açık bir hata mesajı gösterir.
 - Araç çıktıları uygulama içinde önizlenebilir; "Cihaza Kaydet" Android'de

@@ -1,4 +1,4 @@
-package com.medya.app;
+package com.BeyTool.app;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -26,13 +26,13 @@ import androidx.media.app.NotificationCompat.MediaStyle;
  */
 public class AudioNotificationService extends Service {
 
-    static final String ACTION_START = "com.medya.app.audio.START";
-    static final String ACTION_UPDATE = "com.medya.app.audio.UPDATE";
-    static final String ACTION_STOP = "com.medya.app.audio.STOP";
-    static final String ACTION_PLAY = "com.medya.app.audio.PLAY";
-    static final String ACTION_PAUSE = "com.medya.app.audio.PAUSE";
-    static final String ACTION_NEXT = "com.medya.app.audio.NEXT";
-    static final String ACTION_PREVIOUS = "com.medya.app.audio.PREVIOUS";
+    static final String ACTION_START = "com.BeyTool.app.audio.START";
+    static final String ACTION_UPDATE = "com.BeyTool.app.audio.UPDATE";
+    static final String ACTION_STOP = "com.BeyTool.app.audio.STOP";
+    static final String ACTION_PLAY = "com.BeyTool.app.audio.PLAY";
+    static final String ACTION_PAUSE = "com.BeyTool.app.audio.PAUSE";
+    static final String ACTION_NEXT = "com.BeyTool.app.audio.NEXT";
+    static final String ACTION_PREVIOUS = "com.BeyTool.app.audio.PREVIOUS";
 
     private static final String CHANNEL_ID = "medya_audio";
     private static final int NOTIFICATION_ID = 41;

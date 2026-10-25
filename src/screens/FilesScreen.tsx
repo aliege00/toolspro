@@ -87,6 +87,9 @@ export default function FilesScreen() {
     createAlbum,
     addToAlbum,
     deleteAlbum,
+    hydrating,
+    storageError,
+    dismissStorageError,
   } = useLibrary();
 
   const [mode, setMode] = useState<Mode>("library");
@@ -450,6 +453,25 @@ export default function FilesScreen() {
           </div>
         )}
 
+        {storageError && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 flex items-start gap-3 rounded-[12px] bg-fill px-3.5 py-3"
+          >
+            <p className="min-w-0 flex-1 text-[12.5px] leading-[1.45] text-ink2">
+              {t("files.storageError", { message: storageError })}
+            </p>
+            <button
+              type="button"
+              onClick={dismissStorageError}
+              className="shrink-0 text-[12.5px] font-medium text-tint"
+            >
+              {t("files.storageErrorDismiss")}
+            </button>
+          </motion.div>
+        )}
+
         {/* ---------- Trash mode ---------- */}
         {mode === "trash" && !albumOpen ? (
           <div className="mt-4">
@@ -595,6 +617,11 @@ export default function FilesScreen() {
                 </div>
               </>
             )}
+          </div>
+        ) : hydrating && entries.length === 0 ? (
+          <div className="flex flex-col items-center py-20 text-center">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-ink3 border-t-transparent" />
+            <p className="mt-4 text-[14px] text-ink2">{t("files.loading")}</p>
           </div>
         ) : visible.length === 0 ? (
           /* ---------- Empty states ---------- */
