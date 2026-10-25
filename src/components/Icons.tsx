@@ -453,3 +453,66 @@ export const LayersIcon = (p: IconProps) => (
     <path d="M2.5 12.5l9.5 5 9.5-5" />
   </Icon>
 );
+
+export const EditorIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="2.5" y="4.5" width="19" height="15" rx="2.4" />
+    <path d="M2.5 9h19M7 4.5v15M17 4.5v15" />
+    <path d="M10 12.5l4 2.2-4 2.2z" fill="currentColor" stroke="none" />
+  </Icon>
+);
+
+export const UndoIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M8 7H4V3" />
+    <path d="M4 7c2-2.6 5-4 8.2-4A9 9 0 1 1 4.7 17" />
+  </Icon>
+);
+
+export const RedoIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M16 7h4V3" />
+    <path d="M20 7c-2-2.6-5-4-8.2-4A9 9 0 1 1 19.3 17" />
+  </Icon>
+);
+
+export const FlipHIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 3v18" strokeDasharray="2 3" />
+    <path d="M9 6L3 12l6 6V6z" />
+    <path d="M15 6l6 6-6 6V6z" />
+  </Icon>
+);
+
+export const FlipVIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 12h18" strokeDasharray="2 3" />
+    <path d="M6 9l6-6 6 6H6z" />
+    <path d="M6 15l6 6 6-6H6z" />
+  </Icon>
+);
+
+export const VolumeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 9.5v5h3l4.5 3.5v-12L7 9.5H4z" />
+    <path d="M15 8.5a5 5 0 0 1 0 7" />
+    <path d="M17.5 5.5a8.5 8.5 0 0 1 0 13" />
+  </Icon>
+);
+
+export const ShareIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 3v13" />
+    <path d="M8 7l4-4 4 4" />
+    <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+  </Icon>
+);
+
+export const SplitIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6 3v5a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3v7" />
+    <circle cx="6" cy="3" r="1.8" />
+    <circle cx="18" cy="21" r="1.8" />
+    <path d="M9 12L4 17M15 12l5 5" />
+  </Icon>
+);

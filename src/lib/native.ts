@@ -40,6 +40,17 @@ type AudioNotificationApi = {
 /** Kilit ekranı / bildirim medya kontrolleri (android/AudioNotificationPlugin). */
 export const AudioNotification = registerPlugin<AudioNotificationApi>("AudioNotification");
 
+type GalleryApi = {
+  save: (options: {
+    path: string;
+    fileName: string;
+    mimeType: string;
+  }) => Promise<{ uri: string }>;
+};
+
+/** Galeriye video kaydı (android/GalleryPlugin). */
+export const Gallery = registerPlugin<GalleryApi>("Gallery");
+
 export function isNative(): boolean {
   return Capacitor.isNativePlatform();
 }
@@ -103,6 +114,55 @@ async function blobToBase64(blob: Blob): Promise<string> {
 }
 
 export type SaveResult = "shared" | "downloaded" | "failed";
+
+async function writeCache(blob: Blob, fileName: string): Promise<string> {
+  const data = await blobToBase64(blob);
+  const written = await Filesystem.writeFile({
+    path: `medya/${fileName}`,
+    data,
+    directory: Directory.Cache,
+    recursive: true,
+  });
+  return written.uri;
+}
+
+/** Videoyu doğrudan galeriye kaydeder (tarayıcıda indirir). */
+export async function saveToGallery(
+  blob: Blob,
+  fileName: string,
+  mimeType = "video/mp4",
+): Promise<boolean> {
+  if (!isNative()) {
+    triggerDownload(blob, fileName);
+    return true;
+  }
+  try {
+    const path = await writeCache(blob, fileName);
+    await Gallery.save({ path, fileName, mimeType });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Sistem paylaşma sayfasını açar (tarayıcıda indirir). */
+export async function shareBlob(blob: Blob, fileName: string): Promise<boolean> {
+  if (!isNative()) {
+    triggerDownload(blob, fileName);
+    return true;
+  }
+  try {
+    const path = await writeCache(blob, fileName);
+    await Share.share({
+      title: fileName,
+      dialogTitle: "Videoyu paylaş",
+      files: [path],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Çıktıyı cihaza kaydetmeye çalışır.

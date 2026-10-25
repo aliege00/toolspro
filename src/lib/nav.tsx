@@ -5,6 +5,7 @@ export type Route =
   | { name: "home" }
   | { name: "video"; fileId?: string }
   | { name: "files" }
+  | { name: "editor" }
   | { name: "tools" }
   | { name: "settings" }
   | { name: "tool"; id: string; fileId?: string };

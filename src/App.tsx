@@ -13,6 +13,7 @@ import Onboarding from "@/screens/Onboarding";
 import Home from "@/screens/Home";
 import VideoScreen from "@/screens/VideoScreen";
 import FilesScreen from "@/screens/FilesScreen";
+import EditorScreen from "@/screens/EditorScreen";
 import ToolsScreen from "@/screens/ToolsScreen";
 import ToolScreen from "@/screens/ToolScreen";
 import Settings from "@/screens/Settings";
@@ -25,6 +26,8 @@ function renderRoute(route: Route) {
       return <VideoScreen fileId={route.fileId} />;
     case "files":
       return <FilesScreen />;
+    case "editor":
+      return <EditorScreen />;
     case "tools":
       return <ToolsScreen />;
     case "tool":

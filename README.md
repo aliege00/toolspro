@@ -15,6 +15,11 @@ yüklenmeden yapılır.
   ilerleme çubuğu, tam ekran. Oynatılabilirlik cihazın codec desteğine bağlıdır.
 - **Dosyalar**: Klasör veya çoklu dosya seçimi, kategori filtreleri, küçük
   kareler, görsel ışığı, ses önizleme, dosya özeti + SHA-256.
+- **Editör**: Çok izli (video, ses, metin) zaman çizelgesi, iki parmakla
+  yakınlaştırma, kırp/böl/sil/çoğalt/taşı, 0.25x–4x hız, ters çevirme, ses
+  seviyesi, fade in/out, 9:16–16:9–1:1–4:5 oranları, döndürme/yansıtma, geri
+  al/yinele ve proje listesi. Dışa aktarma FFmpeg.wasm ile 480p/720p/1080p
+  yapılır; ilerleme, iptal, galeriye kaydetme ve paylaşma vardır.
 - **Araçlar**: Video → MP3, ses kırpma (MP3/WAV), görsel sıkıştırma, görsel
   biçim dönüştürme (JPEG/PNG/WebP), ZIP arşivi, SHA-256 parmak izi, video
   bilgisi + codec destek tablosu.
@@ -77,6 +82,13 @@ dosyasında tanımlıdır ve `MainActivity` içinde kaydedilir.
   dosyalar da aynı yolu kullanır. Kopyalama base64 üzerinden yapıldığı için çok
   büyük kitaplıklarda açılış yavaşlayabilir ve bellek kullanımı artabilir.
 - Editör projeleri `beytool/projects` altında JSON olarak otomatik kaydedilir.
+- FFmpeg.wasm tarayıcı bellek alanında çalışır. Uzun/1080p projelerde dışa
+  aktarma yavaşlayabilir veya bellek yetersizliğiyle durabilir; uygulama bunu
+  dışa aktarma sayfasında uyarır. Gerçek telefonlarda hız ve bellek sınırı
+  ölçülmemiştir.
+- Editör önizlemesi `<video>` etiketiyle yapılır; ters çevirme, geçişler,
+  filtreler ve metin animasyonlarının bir kısmı yalnızca dışa aktarmada tam
+  uygulanır.
 - MP3 çıkarma, cihazın WebAudio çözücüsüyle çalışır. Çözümleyemediği codec'ler
   için araç açık bir hata mesajı gösterir.
 - Araç çıktıları uygulama içinde önizlenebilir; "Cihaza Kaydet" Android'de

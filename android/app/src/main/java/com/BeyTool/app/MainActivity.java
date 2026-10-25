@@ -14,5 +14,6 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         registerPlugin(MediaPermissionsPlugin.class);
         registerPlugin(AudioNotificationPlugin.class);
+        registerPlugin(GalleryPlugin.class);
     }
 }

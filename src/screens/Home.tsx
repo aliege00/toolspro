@@ -3,6 +3,7 @@ import { Toggle } from "@/components/ui";
 import { BeyToolMark } from "@/components/Brand";
 import {
   ChevronRight,
+  EditorIcon,
   FolderIcon,
   Moon,
   SettingsIcon,
@@ -16,7 +17,7 @@ import { useOutputs } from "@/lib/outputs";
 import { useT } from "@/i18n";
 
 const entries: {
-  route: "video" | "files" | "tools";
+  route: "video" | "files" | "editor" | "tools";
   icon: React.ReactNode;
   titleKey: string;
   descKey: string;
@@ -32,6 +33,12 @@ const entries: {
     icon: <FolderIcon size={26} />,
     titleKey: "home.files.title",
     descKey: "home.files.desc",
+  },
+  {
+    route: "editor",
+    icon: <EditorIcon size={26} />,
+    titleKey: "home.editor.title",
+    descKey: "home.editor.desc",
   },
   {
     route: "tools",
