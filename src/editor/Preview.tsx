@@ -44,6 +44,15 @@ function transformStyle(clip: Clip, extraScale = 1): string {
   return parts.join(" ");
 }
 
+function kenBurnsTransform(clip: Clip, time: number): string {
+  if (!clip.kenBurns || clip.kind !== "image") return transformStyle(clip);
+  const progress = Math.max(0, Math.min(1, (time - clip.start) / Math.max(0.01, clip.duration)));
+  const scale = 1.06 + progress * 0.08;
+  const x = (progress - 0.5) * 3.5;
+  const y = (progress - 0.5) * 2.5;
+  return `${transformStyle(clip)} translate(${x}%, ${y}%) scale(${scale})`;
+}
+
 function transitionState(clip: Clip | null, time: number) {
   if (!clip || clip.transitionIn === "none" || clip.transitionDuration <= 0) {
     return { opacity: 1, transform: "none" };
@@ -60,8 +69,8 @@ function transitionState(clip: Clip | null, time: number) {
     };
   }
   return {
-    opacity: progress,
-    transform: `scale(${0.9 + progress * 0.1})`,
+    opacity: 1,
+    transform: `scale(${1.12 - progress * 0.12})`,
   };
 }
 
@@ -73,16 +82,15 @@ function textAnimation(clip: Clip, time: number) {
   const windowSeconds = 0.35;
   const inProgress = Math.min(1, local / windowSeconds);
   const outProgress = Math.min(1, remaining / windowSeconds);
-  let opacity = Math.min(inProgress, outProgress);
+  let opacity = 1;
   let y = 0;
   let scale = 1;
+  if (text.animIn === "fade") opacity *= inProgress;
+  if (text.animOut === "fade") opacity *= outProgress;
   if (text.animIn === "slide") y += (1 - inProgress) * 18;
   if (text.animOut === "slide") y -= (1 - outProgress) * 12;
   if (text.animIn === "zoom") scale *= 0.9 + inProgress * 0.1;
   if (text.animOut === "zoom") scale *= 0.94 + outProgress * 0.06;
-  if (text.animIn === "none" && text.animOut === "none") opacity = 1;
-  else if (text.animIn === "none") opacity = outProgress;
-  else if (text.animOut === "none") opacity = inProgress;
   return {
     opacity: Math.max(0, Math.min(1, opacity)),
     transform: `translateY(${y}px) scale(${scale})`,
@@ -110,12 +118,58 @@ function AudioLayer({
     if (!element.src) element.src = entry.url;
     const target = sourceTime(clip, playhead);
     if (Math.abs(element.currentTime - target) > 0.3) element.currentTime = target;
-    element.volume = muted ? 0 : Math.max(0, Math.min(1, clip.volume));
+    element.volume = muted
+      ? 0
+      : Math.max(0, Math.min(1, clip.volume * clipGain(clip, playhead)));
     if (playing) void element.play().catch(() => undefined);
     else element.pause();
   }, [clip, entry.url, playhead, playing, muted]);
 
   return <audio ref={ref} preload="auto" className="hidden" />;
+}
+
+function OverlayLayer({
+  clip,
+  entry,
+  playhead,
+  playing,
+}: {
+  clip: Clip;
+  entry: Entry;
+  playhead: number;
+  playing: boolean;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    if (element.src !== entry.url) {
+      element.src = entry.url;
+      element.load();
+    }
+    const target = sourceTime(clip, playhead);
+    if (Math.abs(element.currentTime - target) > 0.3) {
+      try {
+        element.currentTime = Math.max(0, target);
+      } catch {
+        /* metadata henüz hazır değil */
+      }
+    }
+    element.playbackRate = Math.max(0.25, Math.min(4, clip.speed));
+    element.muted = true;
+    if (playing) void element.play().catch(() => undefined);
+    else element.pause();
+  }, [clip, entry.url, playhead, playing]);
+
+  return (
+    <video
+      ref={ref}
+      playsInline
+      className="h-full w-full object-cover"
+      style={{ filter: filterStyle(clip), transform: transformStyle(clip) }}
+    />
+  );
 }
 
 export default function Preview({
@@ -177,28 +231,39 @@ export default function Preview({
 
   useEffect(() => {
     const element = videoRef.current;
+    if (!element || !active) return;
+    element.volume = Math.max(0, Math.min(1, active.volume * clipGain(active, playhead)));
+  }, [active, playhead]);
+
+  useEffect(() => {
+    const element = videoRef.current;
     if (!element || !active || !activeEntry || active.kind !== "video") return;
     if (element.src !== activeEntry.url) {
       element.src = activeEntry.url;
       element.load();
     }
-    const target = sourceTime(active, playhead);
+    const frozen = active.freezeAt !== undefined;
+    const target = frozen ? active.freezeAt! : sourceTime(active, playhead);
     if (Math.abs(element.currentTime - target) > 0.25) {
-      element.currentTime = Math.max(0, target);
+      try {
+        element.currentTime = Math.max(0, target);
+      } catch {
+        /* metadata henüz hazır değil */
+      }
     }
-    element.playbackRate = Math.max(0.25, Math.min(4, active.speed));
+    element.playbackRate = frozen ? 1 : Math.max(0.25, Math.min(4, active.speed));
     element.volume = active.volume;
     element.muted = active.volume <= 0 || !playing;
-    if (playing) void element.play().catch(() => undefined);
+    if (playing && !frozen) void element.play().catch(() => undefined);
     else element.pause();
     // playhead yalnızca klip değiştiğinde konumlandırılır; oynarken sürekli arama yapılmaz.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active?.id, activeEntry?.url, active?.speed, active?.volume, playing]);
+  }, [active?.id, activeEntry?.url, active?.speed, active?.volume, active?.freezeAt, playing]);
 
   useEffect(() => {
     const element = videoRef.current;
     if (!element || playing || !active || active.kind !== "video") return;
-    const target = sourceTime(active, playhead);
+    const target = active.freezeAt ?? sourceTime(active, playhead);
     if (Number.isFinite(target) && Math.abs(element.currentTime - target) > 0.25) {
       try {
         element.currentTime = Math.max(0, target);
@@ -247,7 +312,9 @@ export default function Preview({
                 transform: transformStyle(active),
               }}
               onCanPlay={(event) => {
-                if (playing) void event.currentTarget.play().catch(() => undefined);
+                if (playing && active.freezeAt === undefined) {
+                  void event.currentTarget.play().catch(() => undefined);
+                }
               }}
             />
           ) : activeImage ? (
@@ -257,7 +324,7 @@ export default function Preview({
               className="h-full w-full object-contain"
               style={{
                 filter: filterStyle(active!),
-                transform: transformStyle(active!),
+                transform: kenBurnsTransform(active!, playhead),
               }}
             />
           ) : (
@@ -284,22 +351,25 @@ export default function Preview({
             key={clip.id}
             className="pointer-events-none absolute overflow-hidden rounded-[6px]"
             style={{
-              width: `${clip.pip?.scale ?? 0.35}`,
-              height: `${clip.pip?.scale ?? 0.35}`,
-              left: `${clip.pip?.x ?? 0.6}`,
-              top: `${clip.pip?.y ?? 0.08}`,
+              width: `${(clip.pip?.scale ?? 0.35) * 100}%`,
+              height: `${(clip.pip?.scale ?? 0.35) * 100}%`,
+              left: `${(clip.pip?.x ?? 0.6) * 100}%`,
+              top: `${(clip.pip?.y ?? 0.08) * 100}%`,
             }}
           >
             {clip.kind === "image" ? (
-              <img src={entry!.url} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <video
+              <img
                 src={entry!.url}
-                muted
-                autoPlay={playing}
-                playsInline
-                loop
+                alt=""
                 className="h-full w-full object-cover"
+                style={{ filter: filterStyle(clip) }}
+              />
+            ) : (
+              <OverlayLayer
+                clip={clip}
+                entry={entry!}
+                playhead={playhead}
+                playing={playing}
               />
             )}
           </div>

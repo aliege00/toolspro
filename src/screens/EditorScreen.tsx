@@ -13,6 +13,7 @@ import {
 import { formatDate, formatDuration, pickFiles } from "@/lib/files";
 import { useLibrary } from "@/lib/library";
 import { useNav } from "@/lib/nav";
+import { requestMicAccess } from "@/lib/native";
 import { useEditorT } from "@/editor/labels";
 import { deleteProject, listProjects, saveProject } from "@/editor/projectStore";
 import Preview from "@/editor/Preview";
@@ -252,6 +253,11 @@ function EditorWorkspace({
   const [exportOpen, setExportOpen] = useState(false);
   const [saveState, setSaveState] = useState<"saving" | "saved">("saved");
   const [toast, setToast] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const recordStartRef = useRef(0);
   const lastMerge = useRef<{ key: string; at: number }>({ key: "", at: 0 });
 
   const totalDuration = useMemo(() => projectDuration(project), [project]);
@@ -399,7 +405,12 @@ function EditorWorkspace({
             original.kind !== "text"
           ) {
             const span = original.duration * original.speed;
-            next.duration = clamp(span / next.speed, 0.1, 6 * 60 * 60);
+            const nextStart = track.clips
+              .filter((item) => item.id !== clipId && item.start >= original.start + 0.001)
+              .reduce((min, item) => Math.min(min, item.start), Number.POSITIVE_INFINITY);
+            const room =
+              Number.isFinite(nextStart) ? nextStart - original.start : 6 * 60 * 60;
+            next.duration = clamp(span / next.speed, 0.1, Math.max(0.1, Math.min(room, 6 * 60 * 60)));
             next.fadeIn = Math.min(next.fadeIn, next.duration / 2);
             next.fadeOut = Math.min(next.fadeOut, next.duration / 2);
           }
@@ -614,6 +625,183 @@ function EditorWorkspace({
     });
   }, [addFiles, commit, notify, t]);
 
+  const addMusic = useCallback(async () => {
+    const files = await pickFiles({ multiple: true, accept: "audio/*" });
+    if (files.length === 0) return;
+    const fresh = addFiles(files).filter((entry) => entry.kind === "audio");
+    if (fresh.length === 0) {
+      notify(t("musicMissing"));
+      return;
+    }
+    const additions: Clip[] = [];
+    for (const entry of fresh) {
+      const duration = await probeDuration(entry);
+      const track =
+        projectRef.current.tracks.find((item) => item.kind === "audio") ??
+        createTrack("audio", 1);
+      const start = freeStart(
+        { ...track, clips: [...track.clips, ...additions] },
+        playheadRef.current,
+        duration,
+      );
+      additions.push(clipFromEntry(entry, start, duration));
+    }
+    commit((draft) => {
+      let target = draft.tracks.find((item) => item.kind === "audio");
+      if (!target) {
+        target = createTrack("audio", 1);
+        draft.tracks.push(target);
+      }
+      target.clips.push(...additions);
+      target.clips = sortedClips(target);
+    });
+  }, [addFiles, commit, notify, t]);
+
+  const addPip = useCallback(async () => {
+    const files = await pickFiles({ accept: "video/*,image/*" });
+    if (files.length === 0) return;
+    const fresh = addFiles(files).filter((entry) => entry.kind !== "other");
+    if (fresh.length === 0) return;
+    const additions: Clip[] = [];
+    for (const entry of fresh) {
+      const duration = await probeDuration(entry);
+      const track =
+        projectRef.current.tracks.find((item) => item.kind === "overlay") ??
+        createTrack("overlay", 1);
+      const start = freeStart(
+        { ...track, clips: [...track.clips, ...additions] },
+        playheadRef.current,
+        duration,
+      );
+      const clip = clipFromEntry(entry, start, duration);
+      clip.volume = 0;
+      clip.pip = { scale: 0.35, x: 0.6, y: 0.08 };
+      additions.push(clip);
+    }
+    commit((draft) => {
+      let target = draft.tracks.find((item) => item.kind === "overlay");
+      if (!target) {
+        target = createTrack("overlay", draft.tracks.filter((item) => item.kind === "overlay").length + 1);
+        draft.tracks.push(target);
+      }
+      target.clips.push(...additions);
+      target.clips = sortedClips(target);
+    });
+    setSelectedId(additions[0]?.id ?? null);
+  }, [addFiles, commit]);
+
+  const detachAudio = useCallback(() => {
+    if (!selectedClip || selectedTrack?.kind !== "video") return;
+    commit((draft) => {
+      const videoTrack = draft.tracks.find((item) => item.id === selectedTrack.id);
+      const source = videoTrack?.clips.find((item) => item.id === selectedClip.id);
+      if (!videoTrack || !source) return;
+      let audioTrack = draft.tracks.find((item) => item.kind === "audio");
+      if (!audioTrack) {
+        audioTrack = createTrack("audio", 1);
+        draft.tracks.push(audioTrack);
+      }
+      const copy: Clip = {
+        ...cloneClipData(source),
+        id: `${source.id}-audio${Date.now().toString(36)}`,
+        kind: "audio",
+        name: `${source.name} (ses)`,
+        start: freeStart(audioTrack, source.start, source.duration),
+        volume: source.volume,
+      };
+      audioTrack.clips.push(copy);
+      audioTrack.clips = sortedClips(audioTrack);
+      source.volume = 0;
+    });
+    notify(t("detachDone"));
+  }, [commit, notify, selectedClip, selectedTrack, t]);
+
+  const stopVoiceover = useCallback(() => {
+    recorderRef.current?.stop();
+  }, []);
+
+  const startVoiceover = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      notify(t("micError"));
+      return;
+    }
+    const granted = await requestMicAccess();
+    if (!granted) {
+      notify(t("micDenied"));
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const candidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+        "audio/aac",
+      ];
+      const mimeType = candidates.find((type) => MediaRecorder.isTypeSupported(type));
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      chunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const seconds = Math.max(0.3, (Date.now() - recordStartRef.current) / 1000);
+        const type = recorder.mimeType || mimeType || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type });
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        setRecording(false);
+        if (blob.size < 128) return;
+        const extension = type.includes("mp4") ? "m4a" : "webm";
+        const file = new File([blob], `Seslendirme-${Date.now()}.${extension}`, { type });
+        const [entry] = addFiles([file]);
+        if (!entry) return;
+        const track =
+          projectRef.current.tracks.find((item) => item.kind === "audio") ??
+          createTrack("audio", 1);
+        const start = freeStart(track, playheadRef.current, seconds);
+        const clip = clipFromEntry(entry, start, seconds);
+        clip.sourceDuration = seconds;
+        clip.volume = 1;
+        commit((draft) => {
+          let target = draft.tracks.find((item) => item.kind === "audio");
+          if (!target) {
+            target = createTrack("audio", 1);
+            draft.tracks.push(target);
+          }
+          target.clips.push(clip);
+          target.clips = sortedClips(target);
+        });
+        setSelectedId(clip.id);
+        notify(t("voiceoverAdded"));
+      };
+      recorderRef.current = recorder;
+      recordStartRef.current = Date.now();
+      recorder.start();
+      setRecording(true);
+    } catch {
+      notify(t("micError"));
+    }
+  }, [addFiles, commit, notify, t]);
+
+  const toggleVoiceover = useCallback(() => {
+    if (recording) stopVoiceover();
+    else void startVoiceover();
+  }, [recording, startVoiceover, stopVoiceover]);
+
+  useEffect(
+    () => () => {
+      try {
+        if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+      } catch {
+        /* yoksay */
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    },
+    [],
+  );
+
   const addText = useCallback(() => {
     const track = project.tracks.find((item) => item.kind === "text") ?? null;
     if (!track) {
@@ -759,6 +947,12 @@ function EditorWorkspace({
         onAddTrack={addTrack}
         onAddMedia={() => void addMedia()}
         onAddText={addText}
+        trackKind={selectedTrack?.kind ?? null}
+        recording={recording}
+        onAddMusic={() => void addMusic()}
+        onToggleVoiceover={toggleVoiceover}
+        onDetachAudio={detachAudio}
+        onAddPip={() => void addPip()}
       />
 
       <ExportSheet

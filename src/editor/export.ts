@@ -15,6 +15,7 @@ import {
   audioTracks,
   clipEnd,
   mainVideoTrack,
+  overlayTracks,
   projectDuration,
   sortedClips,
   textTracks,
@@ -240,15 +241,18 @@ export async function exportProject({
     const v = `v${index}`;
     const a = `a${index}`;
     const isImage = clip.kind === "image";
-    const span = isImage
+    const frozen = clip.kind === "video" && clip.freezeAt !== undefined;
+    const span = frozen
       ? clip.duration
-      : Math.max(
-          0.05,
-          Math.min(
-            clip.duration * clip.speed,
-            Math.max(0.05, clip.sourceDuration - clip.inPoint),
-          ),
-        );
+      : isImage
+        ? clip.duration
+        : Math.max(
+            0.05,
+            Math.min(
+              clip.duration * clip.speed,
+              Math.max(0.05, clip.sourceDuration - clip.inPoint),
+            ),
+          );
     const inputIndex = addInput(
       isImage
         ? ["-loop", "1", "-t", num(clip.duration + 0.2), "-i", source.name]
@@ -256,7 +260,15 @@ export async function exportProject({
     );
 
     const videoFilters: string[] = [];
-    if (!isImage) {
+    if (frozen) {
+      videoFilters.push(
+        `trim=start=${num(clip.freezeAt!)}:duration=0.05`,
+        "setpts=PTS-STARTPTS",
+        "loop=loop=-1:size=1:start=0",
+        `trim=duration=${num(clip.duration)}`,
+        "setpts=PTS-STARTPTS",
+      );
+    } else if (!isImage) {
       videoFilters.push(
         `trim=start=${num(clip.inPoint)}:duration=${num(span)}`,
         "setpts=PTS-STARTPTS",
@@ -278,13 +290,45 @@ export async function exportProject({
     videoFilters.push(
       `scale=${width}:${height}:force_original_aspect_ratio=decrease`,
       `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black`,
-      "setsar=1",
-      "fps=30",
-      "format=yuv420p",
     );
+
+    if (isImage && clip.kenBurns) {
+      const frames = Math.max(1, Math.round(30 * clip.duration));
+      videoFilters.push(
+        `zoompan=z='min(1.1,1+0.10*on/${frames})':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=${width}x${height}:fps=30`,
+      );
+    }
+
+    const eqParts: string[] = [];
+    if (Math.abs(clip.filter.brightness) > 0.01) {
+      eqParts.push(`brightness=${num(clip.filter.brightness / 100)}`);
+    }
+    if (Math.abs(clip.filter.contrast) > 0.01) {
+      eqParts.push(`contrast=${num(1 + clip.filter.contrast / 100)}`);
+    }
+    if (Math.abs(clip.filter.saturation) > 0.01) {
+      eqParts.push(`saturation=${num(1 + clip.filter.saturation / 100)}`);
+    }
+    if (eqParts.length > 0) videoFilters.push(`eq=${eqParts.join(":")}`);
+    if (clip.filter.preset === "bw") videoFilters.push("hue=s=0");
+    if (clip.filter.preset === "sepia") {
+      videoFilters.push(
+        "colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131",
+      );
+    }
+    if (clip.filter.preset === "vignette") videoFilters.push("vignette=PI/4");
+
+    videoFilters.push("setsar=1", "fps=30", "format=yuv420p");
 
     const fadeIn = Math.max(0, Math.min(clip.fadeIn, clip.duration / 2));
     const fadeOut = Math.max(0, Math.min(clip.fadeOut, clip.duration / 2));
+    const transitionDuration = Math.max(
+      0.2,
+      Math.min(clip.transitionDuration, clip.duration / 2),
+    );
+    if (clip.transitionIn === "fade") {
+      videoFilters.push(`fade=t=in:st=0:d=${num(transitionDuration)}`);
+    }
     if (fadeIn > 0.01) {
       videoFilters.push(`fade=t=in:st=0:d=${num(fadeIn)}`);
     }
@@ -294,10 +338,35 @@ export async function exportProject({
       );
     }
 
-    filters.push(`[${inputIndex}:v]${videoFilters.join(",")}[${v}]`);
+    if (clip.transitionIn === "zoom") {
+      const frames = Math.max(1, Math.round(30 * transitionDuration));
+      videoFilters.push(
+        `zoompan=z='max(1,1.12-0.12*min(on/${frames},1))':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=${width}x${height}:fps=30`,
+        "setsar=1",
+      );
+    }
 
+    if (clip.transitionIn === "slide") {
+      const raw = `vraw${index}`;
+      filters.push(`[${inputIndex}:v]${videoFilters.join(",")}[${raw}]`);
+      filters.push(
+        `color=c=black:s=${width}x${height}:r=30:d=${num(clip.duration)}[vslide${index}]`,
+      );
+      filters.push(
+        `[vslide${index}][${raw}]overlay=x='if(lt(t,${num(transitionDuration)}),${width}*(1-t/${num(transitionDuration)}),0)':y=0:eval=frame:shortest=1[${v}]`,
+      );
+    } else {
+      filters.push(`[${inputIndex}:v]${videoFilters.join(",")}[${v}]`);
+    }
+
+    // Donmuş karede ses kaynağı kare süresinden kısa kalıp concat'ı kısaltabilir;
+    // bu yüzden donmuş klipler sessiz çıkar.
     const useAudio =
-      !isImage && clip.kind === "video" && source.hasAudio && clip.volume > 0.001;
+      !isImage &&
+      !frozen &&
+      clip.kind === "video" &&
+      source.hasAudio &&
+      clip.volume > 0.001;
 
     if (useAudio) {
       const audioFilters = [
@@ -354,6 +423,88 @@ export async function exportProject({
 
   let videoLabel = "vbase";
 
+  // --- Resim içinde resim: kaplama izleri ana videonun üzerine bindirilir ---
+  const pipClips = overlayTracks(project)
+    .flatMap((track) => sortedClips(track))
+    .filter((clip) => clip.kind === "video" || clip.kind === "image");
+
+  for (let index = 0; index < pipClips.length; index += 1) {
+    const clip = pipClips[index];
+    const entry = resolveEntry(clip, entries);
+    if (!entry) throw new Error(`Kaynak bulunamadı: ${clip.name}`);
+    const source = sources.get(entry.id);
+    if (!source) throw new Error(`Kaynak yazılamadı: ${clip.name}`);
+    const isImage = clip.kind === "image";
+    const frozen = clip.kind === "video" && clip.freezeAt !== undefined;
+    const scale = Math.max(0.1, Math.min(0.9, clip.pip?.scale ?? 0.35));
+    const pipWidth = Math.max(2, Math.round((width * scale) / 2) * 2);
+    const pipHeight = Math.max(2, Math.round((height * scale) / 2) * 2);
+    const inputIndex = addInput(
+      isImage
+        ? ["-loop", "1", "-t", num(clip.duration + 0.2), "-i", source.name]
+        : ["-i", source.name],
+    );
+    const span = frozen
+      ? clip.duration
+      : isImage
+        ? clip.duration
+        : Math.max(
+            0.05,
+            Math.min(
+              clip.duration * clip.speed,
+              Math.max(0.05, clip.sourceDuration - clip.inPoint),
+            ),
+          );
+    const chain: string[] = [];
+    if (frozen) {
+      chain.push(
+        `trim=start=${num(clip.freezeAt!)}:duration=0.05`,
+        "setpts=PTS-STARTPTS",
+        "loop=loop=-1:size=1:start=0",
+        `trim=duration=${num(clip.duration)}`,
+        "setpts=PTS-STARTPTS",
+      );
+    } else if (isImage) {
+      chain.push(`trim=duration=${num(clip.duration)}`, "setpts=PTS-STARTPTS");
+    } else {
+      chain.push(
+        `trim=start=${num(clip.inPoint)}:duration=${num(span)}`,
+        "setpts=PTS-STARTPTS",
+      );
+      if (clip.reverse) chain.push("reverse", "setpts=PTS-STARTPTS");
+      if (Math.abs(clip.speed - 1) > 0.001) chain.push(`setpts=PTS/${num(clip.speed)}`);
+    }
+    if (clip.rotate === 90) chain.push("transpose=1");
+    else if (clip.rotate === 180) chain.push("transpose=2", "transpose=2");
+    else if (clip.rotate === 270) chain.push("transpose=2");
+    if (clip.flipH) chain.push("hflip");
+    if (clip.flipV) chain.push("vflip");
+    chain.push(
+      `scale=${pipWidth}:${pipHeight}:force_original_aspect_ratio=decrease`,
+      `pad=${pipWidth}:${pipHeight}:(ow-iw)/2:(oh-ih)/2:color=black`,
+      "setsar=1",
+      "fps=30",
+      "format=yuv420p",
+    );
+    if (Math.abs(clip.filter.brightness) > 0.01 || Math.abs(clip.filter.contrast) > 0.01 || Math.abs(clip.filter.saturation) > 0.01) {
+      chain.push(
+        `eq=brightness=${num(clip.filter.brightness / 100)}:contrast=${num(1 + clip.filter.contrast / 100)}:saturation=${num(1 + clip.filter.saturation / 100)}`,
+      );
+    }
+    if (clip.filter.preset === "bw") chain.push("hue=s=0");
+    if (clip.filter.preset === "sepia") {
+      chain.push("colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131");
+    }
+    chain.push(`setpts=PTS+${num(clip.start)}/TB`);
+    const label = `pip${index}`;
+    filters.push(`[${inputIndex}:v]${chain.join(",")}[${label}]`);
+    const next = `vpip${index}`;
+    filters.push(
+      `[${videoLabel}][${label}]overlay=x=${Math.round((clip.pip?.x ?? 0.6) * width)}:y=${Math.round((clip.pip?.y ?? 0.08) * height)}:enable='between(t,${num(clip.start)},${num(clipEnd(clip))})':eof_action=repeat[${next}]`,
+    );
+    videoLabel = next;
+  }
+
   // --- Metin katmanları: şeffaf PNG'ler ana videonun üzerine bindirilir ---
   const textClips = textTracks(project)
     .flatMap((track) => track.clips)
@@ -367,22 +518,49 @@ export async function exportProject({
     const fileName = `text_${index}.png`;
     await ffmpeg.writeFile(fileName, png);
     written.push(fileName);
-    const inputIndex = addInput(["-loop", "1", "-i", fileName]);
+    const inputIndex = addInput([
+      "-loop",
+      "1",
+      "-t",
+      num(clip.duration + 0.2),
+      "-i",
+      fileName,
+    ]);
     const label = `txt${index}`;
     const chain = ["format=rgba"];
     const text = clip.text!;
-    if (text.animIn !== "none") {
-      chain.push(`fade=t=in:st=${num(clip.start)}:d=0.3:alpha=1`);
+    const windowSeconds = 0.35;
+    // Giriş/çıkış animasyonları PNG akışının kendi zamanında (0..süre) çalışır;
+    // akış sonra ana zaman çizelgesine kaydırılır.
+    if (text.animIn === "fade") {
+      chain.push(`fade=t=in:st=0:d=${num(windowSeconds)}:alpha=1`);
     }
-    if (text.animOut !== "none") {
+    if (text.animOut === "fade") {
       chain.push(
-        `fade=t=out:st=${num(Math.max(clip.start, clipEnd(clip) - 0.3))}:d=0.3:alpha=1`,
+        `fade=t=out:st=${num(Math.max(0, clip.duration - windowSeconds))}:d=${num(windowSeconds)}:alpha=1`,
       );
     }
+    if (text.animIn === "zoom" || text.animOut === "zoom") {
+      const zoomIn = `0.9+0.1*min(t/${num(windowSeconds)},1)`;
+      const zoomOut = `0.95+0.05*min(max(${num(clip.duration)}-t,0)/${num(windowSeconds)},1)`;
+      const factor =
+        text.animIn === "zoom" && text.animOut === "zoom"
+          ? `min(${zoomIn},${zoomOut})`
+          : text.animIn === "zoom"
+            ? zoomIn
+            : zoomOut;
+      chain.push(`scale=w='iw*${factor}':h=-1:eval=frame`);
+      chain.push(`pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black@0`);
+    }
+    chain.push(`setpts=PTS+${num(clip.start)}/TB`);
     filters.push(`[${inputIndex}:v]${chain.join(",")}[${label}]`);
     const next = `vtext${index}`;
+    const slideY =
+      text.animIn === "slide" || text.animOut === "slide"
+        ? `if(lt(t,${num(clip.start + windowSeconds)}),${num(height * 0.1)}*(1-min(max(t-${num(clip.start)},0)/${num(windowSeconds)},1)),if(gt(t,${num(clipEnd(clip) - windowSeconds)}),${num(height * 0.08)}*(1-min(max(${num(clipEnd(clip))}-t,0)/${num(windowSeconds)},1)),0))`
+        : null;
     filters.push(
-      `[${videoLabel}][${label}]overlay=0:0:enable='between(t,${num(clip.start)},${num(clipEnd(clip))})'[${next}]`,
+      `[${videoLabel}][${label}]overlay=0:${slideY ? `'${slideY}'` : "0"}:enable='between(t,${num(clip.start)},${num(clipEnd(clip))})'${slideY ? ":eval=frame" : ""}[${next}]`,
     );
     videoLabel = next;
   }

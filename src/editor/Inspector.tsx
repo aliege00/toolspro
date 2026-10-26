@@ -4,6 +4,7 @@ import {
   FlipHIcon,
   FlipVIcon,
   LayersIcon,
+  MicIcon,
   MusicIcon,
   PlusIcon,
   RotateIcon,
@@ -12,12 +13,23 @@ import {
   TrashBinIcon,
   UndoIcon,
   RedoIcon,
+  VolumeIcon,
 } from "@/components/Icons";
 import { formatBytes, formatDuration } from "@/lib/files";
 import type { Entry } from "@/lib/library";
-import type { Clip, Project, TextAlign, TrackKind } from "./types";
+import type { Clip, FilterPreset, Project, TextAlign, TextAnim, TrackKind, TransitionId } from "./types";
 import { ASPECTS, SPEED_MAX, SPEED_MIN } from "./types";
 import { useEditorT } from "./labels";
+
+const TRANSITIONS: TransitionId[] = ["none", "fade", "slide", "zoom"];
+const PRESETS: FilterPreset[] = ["none", "bw", "sepia", "vignette"];
+const FONTS = [
+  { id: "system", key: "fontSystem" },
+  { id: "serif", key: "fontSerif" },
+  { id: "mono", key: "fontMono" },
+] as const;
+const TEXT_COLORS = ["#ffffff", "#d1d1d6", "#8e8e93", "#48484a", "#1c1c1e", "#b08968"];
+const ANIMS: TextAnim[] = ["none", "fade", "slide", "zoom"];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -76,6 +88,12 @@ export default function Inspector({
   onAddTrack,
   onAddMedia,
   onAddText,
+  trackKind,
+  recording,
+  onAddMusic,
+  onToggleVoiceover,
+  onDetachAudio,
+  onAddPip,
 }: {
   project: Project;
   clip: Clip | null;
@@ -92,6 +110,12 @@ export default function Inspector({
   onAddTrack: (kind: TrackKind) => void;
   onAddMedia: () => void;
   onAddText: () => void;
+  trackKind: TrackKind | null;
+  recording: boolean;
+  onAddMusic: () => void;
+  onToggleVoiceover: () => void;
+  onDetachAudio: () => void;
+  onAddPip: () => void;
 }) {
   const t = useEditorT();
   const isText = clip?.kind === "text";
@@ -224,6 +248,45 @@ export default function Inspector({
             </Panel>
           </section>
 
+          <section>
+            <SectionLabel>{t("addMedia")}</SectionLabel>
+            <Panel>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={onAddMusic}
+                  className="flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-[11px] bg-fill text-ink2 active:opacity-60"
+                >
+                  <MusicIcon size={18} />
+                  <span className="text-[10.5px]">{t("addMusic")}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onToggleVoiceover}
+                  className={`flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-[11px] active:opacity-60 ${
+                    recording ? "bg-ink text-bg" : "bg-fill text-ink2"
+                  }`}
+                >
+                  <MicIcon size={18} />
+                  <span className="text-[10.5px]">
+                    {recording ? t("stop") : t("voiceover")}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onAddPip}
+                  className="flex min-h-[54px] flex-col items-center justify-center gap-1 rounded-[11px] bg-fill text-ink2 active:opacity-60"
+                >
+                  <LayersIcon size={18} />
+                  <span className="text-[10.5px]">{t("pip")}</span>
+                </button>
+              </div>
+              <p className="mt-2 px-0.5 text-[10.5px] leading-[1.4] text-ink3">
+                {t("musicNote")}
+              </p>
+            </Panel>
+          </section>
+
           <p className="px-1 text-center text-[11.5px] leading-[1.45] text-ink3">
             {t("localNote")}
           </p>
@@ -274,7 +337,7 @@ export default function Inspector({
             </div>
           </div>
 
-          {hasAudio && (
+          {hasAudio && clip.freezeAt === undefined && (
             <section>
               <SectionLabel>{t("speed")}</SectionLabel>
               <Panel>
@@ -343,6 +406,254 @@ export default function Inspector({
                       patch(
                         { fadeOut: Math.min(value, clip.duration / 2) },
                         "fadeOut",
+                      )
+                    }
+                  />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Button size="md" variant="gray" onClick={onAddMusic}>
+                    <MusicIcon size={15} />
+                    {t("addMusic")}
+                  </Button>
+                  <Button size="md" variant="gray" onClick={onToggleVoiceover}>
+                    <MicIcon size={15} />
+                    {recording ? t("stop") : t("voiceover")}
+                  </Button>
+                </div>
+                {clip.kind === "video" && (
+                  <Button
+                    full
+                    size="md"
+                    variant="ghost"
+                    className="mt-1.5"
+                    onClick={onDetachAudio}
+                  >
+                    <VolumeIcon size={15} />
+                    {t("detachAudio")}
+                  </Button>
+                )}
+              </Panel>
+            </section>
+          )}
+
+          {(clip.kind === "video" || clip.kind === "image") && (
+            <>
+              <section>
+                <SectionLabel>{t("transition")}</SectionLabel>
+                <Panel>
+                  <div className="grid grid-cols-4 gap-1 rounded-[10px] bg-fill p-1">
+                    {TRANSITIONS.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => patch({ transitionIn: option }, "transition")}
+                        className={`rounded-[8px] py-2 text-[11px] font-medium ${
+                          clip.transitionIn === option
+                            ? "bg-card text-ink shadow-[var(--shadow-card)]"
+                            : "text-ink2"
+                        }`}
+                      >
+                        {t(option)}
+                      </button>
+                    ))}
+                  </div>
+                  {clip.transitionIn !== "none" && (
+                    <div className="mt-2">
+                      <Slider
+                        label={t("duration")}
+                        display={t("seconds", { n: clip.transitionDuration.toFixed(1) })}
+                        min={0.2}
+                        max={1.5}
+                        step={0.1}
+                        value={clip.transitionDuration}
+                        onChange={(value) => patch({ transitionDuration: value }, "transitionDuration")}
+                      />
+                    </div>
+                  )}
+                </Panel>
+              </section>
+
+              <section>
+                <SectionLabel>{t("filter")}</SectionLabel>
+                <Panel>
+                  <div className="grid grid-cols-4 gap-1 rounded-[10px] bg-fill p-1">
+                    {PRESETS.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() =>
+                          patch(
+                            { filter: { ...clip.filter, preset: option } },
+                            "filterPreset",
+                          )
+                        }
+                        className={`rounded-[8px] px-1 py-2 text-[10.5px] font-medium ${
+                          clip.filter.preset === option
+                            ? "bg-card text-ink shadow-[var(--shadow-card)]"
+                            : "text-ink2"
+                        }`}
+                      >
+                        {t(option)}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    <Slider
+                      label={t("brightness")}
+                      display={`${clip.filter.brightness > 0 ? "+" : ""}${clip.filter.brightness}`}
+                      min={-100}
+                      max={100}
+                      step={5}
+                      value={clip.filter.brightness}
+                      onChange={(value) =>
+                        patch({ filter: { ...clip.filter, brightness: value } }, "brightness")
+                      }
+                    />
+                    <Slider
+                      label={t("contrast")}
+                      display={`${clip.filter.contrast > 0 ? "+" : ""}${clip.filter.contrast}`}
+                      min={-100}
+                      max={100}
+                      step={5}
+                      value={clip.filter.contrast}
+                      onChange={(value) =>
+                        patch({ filter: { ...clip.filter, contrast: value } }, "contrast")
+                      }
+                    />
+                    <Slider
+                      label={t("saturation")}
+                      display={`${clip.filter.saturation > 0 ? "+" : ""}${clip.filter.saturation}`}
+                      min={-100}
+                      max={100}
+                      step={5}
+                      value={clip.filter.saturation}
+                      onChange={(value) =>
+                        patch({ filter: { ...clip.filter, saturation: value } }, "saturation")
+                      }
+                    />
+                  </div>
+                </Panel>
+              </section>
+
+              {clip.kind === "video" && (
+                <section>
+                  <SectionLabel>{t("freeze")}</SectionLabel>
+                  <Panel>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[14px]">{t("freeze")}</p>
+                      <Toggle
+                        checked={clip.freezeAt !== undefined}
+                        onChange={(value) =>
+                          patch(
+                            value
+                              ? {
+                                  freezeAt: clip.inPoint,
+                                  duration: Math.max(1.5, Math.min(5, clip.sourceDuration)),
+                                }
+                              : { freezeAt: undefined },
+                            "freezeToggle",
+                          )
+                        }
+                        label={t("freeze")}
+                      />
+                    </div>
+                    {clip.freezeAt !== undefined && (
+                      <div className="mt-2">
+                        <Slider
+                          label={t("freezeAt")}
+                          display={t("seconds", { n: clip.freezeAt.toFixed(1) })}
+                          min={0}
+                          max={Math.max(0.1, clip.sourceDuration)}
+                          step={0.1}
+                          value={clip.freezeAt}
+                          onChange={(value) => patch({ freezeAt: value }, "freezeAt")}
+                        />
+                      </div>
+                    )}
+                  </Panel>
+                </section>
+              )}
+
+              {clip.kind === "image" && (
+                <section>
+                  <SectionLabel>{t("kenBurns")}</SectionLabel>
+                  <Panel>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[14px]">{t("kenBurns")}</p>
+                      <Toggle
+                        checked={!!clip.kenBurns}
+                        onChange={(value) => patch({ kenBurns: value }, "kenBurns")}
+                        label={t("kenBurns")}
+                      />
+                    </div>
+                  </Panel>
+                </section>
+              )}
+            </>
+          )}
+
+          {trackKind === "overlay" && (
+            <section>
+              <SectionLabel>{t("pip")}</SectionLabel>
+              <Panel>
+                <Slider
+                  label={t("pipScale")}
+                  display={`${Math.round((clip.pip?.scale ?? 0.35) * 100)}%`}
+                  min={0.15}
+                  max={0.8}
+                  step={0.01}
+                  value={clip.pip?.scale ?? 0.35}
+                  onChange={(value) =>
+                    patch(
+                      {
+                        pip: {
+                          scale: value,
+                          x: Math.min(clip.pip?.x ?? 0.6, 1 - value),
+                          y: Math.min(clip.pip?.y ?? 0.08, 1 - value),
+                        },
+                      },
+                      "pipScale",
+                    )
+                  }
+                />
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <Slider
+                    label={t("pipX")}
+                    display={`${Math.round((clip.pip?.x ?? 0.6) * 100)}%`}
+                    min={0}
+                    max={Math.max(0, 1 - (clip.pip?.scale ?? 0.35))}
+                    step={0.01}
+                    value={clip.pip?.x ?? 0.6}
+                    onChange={(value) =>
+                      patch(
+                        {
+                          pip: {
+                            scale: clip.pip?.scale ?? 0.35,
+                            y: clip.pip?.y ?? 0.08,
+                            x: value,
+                          },
+                        },
+                        "pipX",
+                      )
+                    }
+                  />
+                  <Slider
+                    label={t("pipY")}
+                    display={`${Math.round((clip.pip?.y ?? 0.08) * 100)}%`}
+                    min={0}
+                    max={Math.max(0, 1 - (clip.pip?.scale ?? 0.35))}
+                    step={0.01}
+                    value={clip.pip?.y ?? 0.08}
+                    onChange={(value) =>
+                      patch(
+                        {
+                          pip: {
+                            scale: clip.pip?.scale ?? 0.35,
+                            x: clip.pip?.x ?? 0.6,
+                            y: value,
+                          },
+                        },
+                        "pipY",
                       )
                     }
                   />
@@ -434,6 +745,86 @@ export default function Inspector({
                         }`}
                       >
                         {t(align)}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="mt-3 mb-1.5 text-[11.5px] text-ink3">{t("font")}</p>
+                  <div className="grid grid-cols-3 gap-1.5 rounded-[10px] bg-fill p-1">
+                    {FONTS.map((font) => (
+                      <button
+                        key={font.id}
+                        type="button"
+                        onClick={() =>
+                          patch({ text: { ...clip.text!, font: font.id } }, "textFont")
+                        }
+                        className={`rounded-[8px] py-2 text-[11.5px] font-medium ${
+                          clip.text!.font === font.id
+                            ? "bg-card text-ink shadow-[var(--shadow-card)]"
+                            : "text-ink2"
+                        }`}
+                      >
+                        {t(font.key)}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="mt-3 mb-1.5 text-[11.5px] text-ink3">{t("color")}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {TEXT_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() =>
+                          patch({ text: { ...clip.text!, color } }, "textColor")
+                        }
+                        aria-label={`${t("color")} ${color}`}
+                        className={`h-7 w-7 rounded-full border active:scale-90 ${
+                          clip.text!.color === color
+                            ? "border-ink ring-2 ring-ink/25"
+                            : "border-line"
+                        }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+
+                  <p className="mt-3 mb-1.5 text-[11.5px] text-ink3">{t("animIn")}</p>
+                  <div className="grid grid-cols-4 gap-1 rounded-[10px] bg-fill p-1">
+                    {ANIMS.map((anim) => (
+                      <button
+                        key={anim}
+                        type="button"
+                        onClick={() =>
+                          patch({ text: { ...clip.text!, animIn: anim } }, "animIn")
+                        }
+                        className={`rounded-[8px] px-1 py-2 text-[10.5px] font-medium ${
+                          clip.text!.animIn === anim
+                            ? "bg-card text-ink shadow-[var(--shadow-card)]"
+                            : "text-ink2"
+                        }`}
+                      >
+                        {t(anim)}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="mt-3 mb-1.5 text-[11.5px] text-ink3">{t("animOut")}</p>
+                  <div className="grid grid-cols-4 gap-1 rounded-[10px] bg-fill p-1">
+                    {ANIMS.map((anim) => (
+                      <button
+                        key={anim}
+                        type="button"
+                        onClick={() =>
+                          patch({ text: { ...clip.text!, animOut: anim } }, "animOut")
+                        }
+                        className={`rounded-[8px] px-1 py-2 text-[10.5px] font-medium ${
+                          clip.text!.animOut === anim
+                            ? "bg-card text-ink shadow-[var(--shadow-card)]"
+                            : "text-ink2"
+                        }`}
+                      >
+                        {t(anim)}
                       </button>
                     ))}
                   </div>
