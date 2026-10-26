@@ -1,6 +1,8 @@
 node_modules/
 dist/
 artifacts/
+packs-dist/
+.packs-build/
 public/ffmpeg/
 public/ocr/
 *.local

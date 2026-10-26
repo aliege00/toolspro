@@ -15,5 +15,6 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MediaPermissionsPlugin.class);
         registerPlugin(AudioNotificationPlugin.class);
         registerPlugin(GalleryPlugin.class);
+        registerPlugin(PackDownloaderPlugin.class);
     }
 }

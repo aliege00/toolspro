@@ -21,6 +21,8 @@ import Timeline from "@/editor/Timeline";
 import Inspector from "@/editor/Inspector";
 import ExportSheet from "@/editor/ExportSheet";
 import { probeDuration, resolveEntry } from "@/editor/media";
+import { readPackAssetBlob } from "@/packs/install";
+import type { PackMusicItem, PackStickerItem } from "@/packs/types";
 import { clamp, clipFromEntry, clipEnd, createProject, createTrack, freeStart, projectDuration, sortedClips, textClip } from "@/editor/types";
 import type { Clip, Project, TrackKind } from "@/editor/types";
 
@@ -690,6 +692,79 @@ function EditorWorkspace({
     setSelectedId(additions[0]?.id ?? null);
   }, [addFiles, commit]);
 
+  const addPackMusic = useCallback(
+    async (item: PackMusicItem) => {
+      try {
+        const blob = await readPackAssetBlob(item.packId, item.file);
+        const file = new File(
+          [blob],
+          `${item.title || item.id}.wav`,
+          { type: blob.type || "audio/wav" },
+        );
+        const [entry] = addFiles([file]);
+        if (!entry) {
+          notify(t("musicMissing"));
+          return;
+        }
+        const duration = await probeDuration(entry);
+        const track =
+          projectRef.current.tracks.find((trackItem) => trackItem.kind === "audio") ??
+          createTrack("audio", 1);
+        const start = freeStart(track, playheadRef.current, duration);
+        const clip = clipFromEntry(entry, start, duration);
+        commit((draft) => {
+          let target = draft.tracks.find((trackItem) => trackItem.kind === "audio");
+          if (!target) {
+            target = createTrack("audio", 1);
+            draft.tracks.push(target);
+          }
+          target.clips.push(clip);
+          target.clips = sortedClips(target);
+        });
+        setSelectedId(clip.id);
+      } catch {
+        notify(t("error"));
+      }
+    },
+    [addFiles, commit, notify, t],
+  );
+
+  const addSticker = useCallback(
+    async (item: PackStickerItem) => {
+      try {
+        const blob = await readPackAssetBlob(item.packId, item.file);
+        const file = new File([blob], `${item.id}.png`, { type: "image/png" });
+        const [entry] = addFiles([file]);
+        if (!entry) return;
+        const duration = 3;
+        const track =
+          projectRef.current.tracks.find((trackItem) => trackItem.kind === "overlay") ??
+          createTrack("overlay", 1);
+        const start = freeStart(track, playheadRef.current, duration);
+        const clip = clipFromEntry(entry, start, duration);
+        clip.sourceDuration = duration;
+        clip.volume = 0;
+        clip.pip = { scale: 0.26, x: 0.62, y: 0.08 };
+        commit((draft) => {
+          let target = draft.tracks.find((trackItem) => trackItem.kind === "overlay");
+          if (!target) {
+            target = createTrack(
+              "overlay",
+              draft.tracks.filter((trackItem) => trackItem.kind === "overlay").length + 1,
+            );
+            draft.tracks.push(target);
+          }
+          target.clips.push(clip);
+          target.clips = sortedClips(target);
+        });
+        setSelectedId(clip.id);
+      } catch {
+        notify(t("error"));
+      }
+    },
+    [addFiles, commit, notify, t],
+  );
+
   const detachAudio = useCallback(() => {
     if (!selectedClip || selectedTrack?.kind !== "video") return;
     commit((draft) => {
@@ -953,6 +1028,8 @@ function EditorWorkspace({
         onToggleVoiceover={toggleVoiceover}
         onDetachAudio={detachAudio}
         onAddPip={() => void addPip()}
+        onAddPackMusic={(item) => void addPackMusic(item)}
+        onAddSticker={(item) => void addSticker(item)}
       />
 
       <ExportSheet

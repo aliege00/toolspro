@@ -5,7 +5,7 @@ import type { Entry } from "@/lib/library";
 export type AspectId = "9:16" | "16:9" | "1:1" | "4:5";
 export type TrackKind = "video" | "overlay" | "audio" | "text";
 export type ClipKind = "video" | "image" | "audio" | "text";
-export type TransitionId = "none" | "fade" | "slide" | "zoom";
+export type TransitionId = "none" | "fade" | "slide" | "zoom" | "blur" | "flash";
 export type FilterPreset = "none" | "bw" | "sepia" | "vignette";
 export type TextAlign = "left" | "center" | "right";
 export type TextAnim = "none" | "fade" | "slide" | "zoom";

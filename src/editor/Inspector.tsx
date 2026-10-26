@@ -20,8 +20,10 @@ import type { Entry } from "@/lib/library";
 import type { Clip, FilterPreset, Project, TextAlign, TextAnim, TrackKind, TransitionId } from "./types";
 import { ASPECTS, SPEED_MAX, SPEED_MIN } from "./types";
 import { useEditorT } from "./labels";
+import { usePacks } from "@/packs/PacksProvider";
+import type { PackMusicItem, PackStickerItem } from "@/packs/types";
 
-const TRANSITIONS: TransitionId[] = ["none", "fade", "slide", "zoom"];
+
 const PRESETS: FilterPreset[] = ["none", "bw", "sepia", "vignette"];
 const FONTS = [
   { id: "system", key: "fontSystem" },
@@ -44,6 +46,67 @@ function Panel({ children }: { children: React.ReactNode }) {
     <div className="rounded-[16px] bg-card p-3.5 shadow-[var(--shadow-card)]">
       {children}
     </div>
+  );
+}
+
+function PackMediaPanel({
+  music,
+  stickers,
+  onAddMusic,
+  onAddSticker,
+}: {
+  music: PackMusicItem[];
+  stickers: PackStickerItem[];
+  onAddMusic: (item: PackMusicItem) => void;
+  onAddSticker: (item: PackStickerItem) => void;
+}) {
+  const t = useEditorT();
+  return (
+    <section>
+      <SectionLabel>{t("packContent")}</SectionLabel>
+      <Panel>
+        {stickers.length > 0 && (
+          <>
+            <p className="mb-1.5 text-[11.5px] text-ink3">{t("stickers")}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {stickers.map((item) => (
+                <button
+                  key={`${item.packId}/${item.id}`}
+                  type="button"
+                  onClick={() => onAddSticker(item)}
+                  className="min-h-[34px] rounded-[9px] border border-line bg-fill/40 px-2.5 text-[11.5px] font-medium text-ink2 active:opacity-60"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {music.length > 0 && (
+          <>
+            <p className={`mb-1.5 text-[11.5px] text-ink3 ${stickers.length > 0 ? "mt-3" : ""}`}>
+              {t("packMusic")}
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {music.map((item) => (
+                <button
+                  key={`${item.packId}/${item.id}`}
+                  type="button"
+                  onClick={() => onAddMusic(item)}
+                  className="flex min-h-[40px] items-center justify-between gap-3 rounded-[9px] bg-fill px-3 text-left active:opacity-60"
+                >
+                  <span className="truncate text-[12.5px] font-medium">{item.title}</span>
+                  <span className="shrink-0 text-[10.5px] text-ink3">
+                    {item.duration > 0 ? t("seconds", { n: item.duration }) : item.artist}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        <p className="mt-2.5 text-[10.5px] leading-[1.4] text-ink3">{t("packContentNote")}</p>
+      </Panel>
+    </section>
   );
 }
 
@@ -94,6 +157,8 @@ export default function Inspector({
   onToggleVoiceover,
   onDetachAudio,
   onAddPip,
+  onAddPackMusic,
+  onAddSticker,
 }: {
   project: Project;
   clip: Clip | null;
@@ -116,10 +181,30 @@ export default function Inspector({
   onToggleVoiceover: () => void;
   onDetachAudio: () => void;
   onAddPip: () => void;
+  onAddPackMusic: (item: PackMusicItem) => void;
+  onAddSticker: (item: PackStickerItem) => void;
 }) {
   const t = useEditorT();
+  const {
+    transitions: packTransitions,
+    filters: packFilters,
+    fonts: packFonts,
+    music: packMusic,
+    stickers: packStickers,
+  } = usePacks();
   const isText = clip?.kind === "text";
   const hasAudio = clip?.kind === "video" || clip?.kind === "audio";
+  const transitionOptions: { id: TransitionId; label: string }[] = [
+    { id: "none", label: t("none") },
+    { id: "fade", label: t("fade") },
+    { id: "slide", label: t("slide") },
+    { id: "zoom", label: t("zoom") },
+    ...packTransitions.map((item) => ({ id: item.id, label: item.label })),
+  ];
+  const fontOptions = [
+    ...FONTS.map((font) => ({ id: font.id as string, label: t(font.key) })),
+    ...packFonts.map((font) => ({ id: font.fontId, label: font.label })),
+  ];
 
   const patch = (value: Partial<Clip>, key: string) => {
     if (!clip) return;
@@ -442,18 +527,18 @@ export default function Inspector({
                 <SectionLabel>{t("transition")}</SectionLabel>
                 <Panel>
                   <div className="grid grid-cols-4 gap-1 rounded-[10px] bg-fill p-1">
-                    {TRANSITIONS.map((option) => (
+                    {transitionOptions.map((option) => (
                       <button
-                        key={option}
+                        key={option.id}
                         type="button"
-                        onClick={() => patch({ transitionIn: option }, "transition")}
-                        className={`rounded-[8px] py-2 text-[11px] font-medium ${
-                          clip.transitionIn === option
+                        onClick={() => patch({ transitionIn: option.id }, "transition")}
+                        className={`rounded-[8px] px-1 py-2 text-[11px] font-medium ${
+                          clip.transitionIn === option.id
                             ? "bg-card text-ink shadow-[var(--shadow-card)]"
                             : "text-ink2"
                         }`}
                       >
-                        {t(option)}
+                        {option.label}
                       </button>
                     ))}
                   </div>
@@ -497,6 +582,43 @@ export default function Inspector({
                       </button>
                     ))}
                   </div>
+                  {packFilters.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {packFilters.map((preset) => {
+                        const active =
+                          clip.filter.preset === "none" &&
+                          clip.filter.brightness === preset.brightness &&
+                          clip.filter.contrast === preset.contrast &&
+                          clip.filter.saturation === preset.saturation;
+                        return (
+                          <button
+                            key={`${preset.packId}/${preset.id}`}
+                            type="button"
+                            onClick={() =>
+                              patch(
+                                {
+                                  filter: {
+                                    preset: "none",
+                                    brightness: preset.brightness,
+                                    contrast: preset.contrast,
+                                    saturation: preset.saturation,
+                                  },
+                                },
+                                "filterPreset",
+                              )
+                            }
+                            className={`min-h-[34px] rounded-[9px] border px-2.5 text-[11px] font-medium active:opacity-60 ${
+                              active
+                                ? "border-ink/60 bg-fill text-ink"
+                                : "border-line bg-fill/40 text-ink2"
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   <div className="mt-3 space-y-2">
                     <Slider
                       label={t("brightness")}
@@ -751,20 +873,20 @@ export default function Inspector({
 
                   <p className="mt-3 mb-1.5 text-[11.5px] text-ink3">{t("font")}</p>
                   <div className="grid grid-cols-3 gap-1.5 rounded-[10px] bg-fill p-1">
-                    {FONTS.map((font) => (
+                    {fontOptions.map((font) => (
                       <button
                         key={font.id}
                         type="button"
                         onClick={() =>
                           patch({ text: { ...clip.text!, font: font.id } }, "textFont")
                         }
-                        className={`rounded-[8px] py-2 text-[11.5px] font-medium ${
+                        className={`rounded-[8px] px-1 py-2 text-[11.5px] font-medium ${
                           clip.text!.font === font.id
                             ? "bg-card text-ink shadow-[var(--shadow-card)]"
                             : "text-ink2"
                         }`}
                       >
-                        {t(font.key)}
+                        {font.label}
                       </button>
                     ))}
                   </div>
@@ -833,6 +955,15 @@ export default function Inspector({
             </section>
           )}
         </>
+      )}
+
+      {(packMusic.length > 0 || packStickers.length > 0) && (
+        <PackMediaPanel
+          music={packMusic}
+          stickers={packStickers}
+          onAddMusic={onAddPackMusic}
+          onAddSticker={onAddSticker}
+        />
       )}
     </div>
   );

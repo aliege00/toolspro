@@ -21,6 +21,7 @@ import {
   textTracks,
 } from "./types";
 import { resolveEntry } from "./media";
+import { ensureFontLoaded, fontFamilyFor } from "@/packs/install";
 
 export type ExportResult = {
   blob: Blob;
@@ -139,7 +140,8 @@ async function renderTextPng(
   context.clearRect(0, 0, width, height);
 
   const fontSize = Math.max(12, (text.size / 1080) * width);
-  const family = textFont(text.font);
+  await ensureFontLoaded(text.font, fontSize);
+  const family = fontFamilyFor(text.font) ?? textFont(text.font);
   context.font = `600 ${fontSize}px ${family}`;
   context.textBaseline = "middle";
   context.textAlign = text.align;
@@ -329,6 +331,11 @@ export async function exportProject({
     if (clip.transitionIn === "fade") {
       videoFilters.push(`fade=t=in:st=0:d=${num(transitionDuration)}`);
     }
+    if (clip.transitionIn === "flash") {
+      videoFilters.push(
+        `fade=t=in:st=0:d=${num(transitionDuration)}:color=white`,
+      );
+    }
     if (fadeIn > 0.01) {
       videoFilters.push(`fade=t=in:st=0:d=${num(fadeIn)}`);
     }
@@ -354,6 +361,16 @@ export async function exportProject({
       );
       filters.push(
         `[vslide${index}][${raw}]overlay=x='if(lt(t,${num(transitionDuration)}),${width}*(1-t/${num(transitionDuration)}),0)':y=0:eval=frame:shortest=1[${v}]`,
+      );
+    } else if (clip.transitionIn === "blur") {
+      const sharp = `vsharp${index}`;
+      const blurred = `vblur${index}`;
+      filters.push(
+        `[${inputIndex}:v]${videoFilters.join(",")},split=2[${blurred}a][${sharp}]`,
+      );
+      filters.push(`[${blurred}a]gblur=sigma=16[${blurred}]`);
+      filters.push(
+        `[${blurred}][${sharp}]xfade=transition=fade:duration=${num(transitionDuration)}:offset=0[${v}]`,
       );
     } else {
       filters.push(`[${inputIndex}:v]${videoFilters.join(",")}[${v}]`);
@@ -479,12 +496,13 @@ export async function exportProject({
     else if (clip.rotate === 270) chain.push("transpose=2");
     if (clip.flipH) chain.push("hflip");
     if (clip.flipV) chain.push("vflip");
+    if (isImage) chain.push("format=rgba");
     chain.push(
       `scale=${pipWidth}:${pipHeight}:force_original_aspect_ratio=decrease`,
-      `pad=${pipWidth}:${pipHeight}:(ow-iw)/2:(oh-ih)/2:color=black`,
+      `pad=${pipWidth}:${pipHeight}:(ow-iw)/2:(oh-ih)/2:color=${isImage ? "black@0" : "black"}`,
       "setsar=1",
       "fps=30",
-      "format=yuv420p",
+      isImage ? "format=rgba" : "format=yuv420p",
     );
     if (Math.abs(clip.filter.brightness) > 0.01 || Math.abs(clip.filter.contrast) > 0.01 || Math.abs(clip.filter.saturation) > 0.01) {
       chain.push(
@@ -500,7 +518,7 @@ export async function exportProject({
     filters.push(`[${inputIndex}:v]${chain.join(",")}[${label}]`);
     const next = `vpip${index}`;
     filters.push(
-      `[${videoLabel}][${label}]overlay=x=${Math.round((clip.pip?.x ?? 0.6) * width)}:y=${Math.round((clip.pip?.y ?? 0.08) * height)}:enable='between(t,${num(clip.start)},${num(clipEnd(clip))})':eof_action=repeat[${next}]`,
+      `[${videoLabel}][${label}]overlay=x=${Math.round((clip.pip?.x ?? 0.6) * width)}:y=${Math.round((clip.pip?.y ?? 0.08) * height)}:enable='between(t,${num(clip.start)},${num(clipEnd(clip))})':eof_action=repeat${isImage ? ":format=auto" : ""}[${next}]`,
     );
     videoLabel = next;
   }

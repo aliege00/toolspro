@@ -18,8 +18,15 @@ yüklenmeden yapılır.
 - **Editör**: Çok izli (video, ses, metin) zaman çizelgesi, iki parmakla
   yakınlaştırma, kırp/böl/sil/çoğalt/taşı, 0.25x–4x hız, ters çevirme, ses
   seviyesi, fade in/out, 9:16–16:9–1:1–4:5 oranları, döndürme/yansıtma, geri
-  al/yinele ve proje listesi. Dışa aktarma FFmpeg.wasm ile 480p/720p/1080p
-  yapılır; ilerleme, iptal, galeriye kaydetme ve paylaşma vardır.
+  al/yinele ve proje listesi. Solma/kayma/yakınlaşma geçişleri, renk
+  filtreleri, stillendirilmiş metin, resim içinde resim, donmuş kare, Ken
+  Burns, müzik, ses ayırma ve mikrofonla seslendirme vardır. Dışa aktarma
+  FFmpeg.wasm ile 480p/720p/1080p yapılır; ilerleme, iptal, galeriye kaydetme
+  ve paylaşma vardır.
+- **Paketler**: Ayarlar → Paketler bölümünden geçiş, filtre, font, çıkartma ve
+  müzik paketleri GitHub Releases'ten indirilir. Boyut ve lisans indirmeden
+  önce gösterilir; SHA-256 doğrulanır; ilerleme ve iptal vardır. Paketler
+  `beytool/packs` altında kalır ve aynı bölümden silinir.
 - **Araçlar**: Video → MP3, ses kırpma (MP3/WAV), görsel sıkıştırma, görsel
   biçim dönüştürme (JPEG/PNG/WebP), ZIP arşivi, SHA-256 parmak izi, video
   bilgisi + codec destek tablosu.
@@ -86,9 +93,14 @@ dosyasında tanımlıdır ve `MainActivity` içinde kaydedilir.
   aktarma yavaşlayabilir veya bellek yetersizliğiyle durabilir; uygulama bunu
   dışa aktarma sayfasında uyarır. Gerçek telefonlarda hız ve bellek sınırı
   ölçülmemiştir.
-- Editör önizlemesi `<video>` etiketiyle yapılır; ters çevirme, geçişler,
-  filtreler ve metin animasyonlarının bir kısmı yalnızca dışa aktarmada tam
-  uygulanır.
+- Editör önizlemesi `<video>` etiketiyle yapılır; ters çevirme, donmuş kare
+  ve bulanık geçişin bir kısmı yalnızca dışa aktarmada tam uygulanır.
+- Paket indirmeleri APK'da yerel indiriciyle (CORS'suz) yapılır. Tarayıcı
+  önizlemesinde GitHub Release indirmeleri CORS nedeniyle engellenebilir;
+  uygulama bunu ayrı bir hata olarak gösterir.
+- Paket kaynakları ve lisansları `src/packs/manifest.json` içindedir.
+  Geçiş/filtre/çıkartma/müzik paketleri CC0-1.0; fontlar SIL OFL 1.1'dir.
+  Paket görselleri `node scripts/build-packs.mjs` ile yeniden üretilebilir.
 - MP3 çıkarma, cihazın WebAudio çözücüsüyle çalışır. Çözümleyemediği codec'ler
   için araç açık bir hata mesajı gösterir.
 - Araç çıktıları uygulama içinde önizlenebilir; "Cihaza Kaydet" Android'de

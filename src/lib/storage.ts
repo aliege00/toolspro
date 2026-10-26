@@ -30,7 +30,7 @@ export function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
+export function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
   const clean = base64.replace(/\s/g, "");
   const binary = atob(clean);
   const bytes = new Uint8Array(new ArrayBuffer(binary.length));
@@ -117,6 +117,17 @@ export async function listStored(directory: string): Promise<{ name: string; siz
     return result.files
       .filter((file) => file.type === "file")
       .map((file) => ({ name: file.name, size: file.size ?? 0 }));
+  } catch {
+    return [];
+  }
+}
+
+export async function listDirectories(directory: string): Promise<string[]> {
+  try {
+    const result = await Filesystem.readdir({ path: directory, directory: DATA });
+    return result.files
+      .filter((file) => file.type === "directory")
+      .map((file) => file.name);
   } catch {
     return [];
   }

@@ -1,0 +1,97 @@
+{
+  "manifestVersion": 1,
+  "releasedAt": "2026-10-26",
+  "baseUrl": "https://github.com/aliege00/toolspro/releases/download/packs-v1",
+  "packs": [
+    {
+      "id": "extra-transitions",
+      "kind": "transitions",
+      "title": {
+        "tr": "Ekstra Geçişler",
+        "en": "Extra Transitions"
+      },
+      "description": {
+        "tr": "Yumuşak bulanıklaşma ve kısa flaş geçişleri.",
+        "en": "Soft blur and quick flash transitions."
+      },
+      "version": 1,
+      "file": "pack-extra-transitions-v1.zip",
+      "license": "CC0-1.0",
+      "source": "https://github.com/aliege00/toolspro/releases/tag/packs-v1",
+      "size": 357,
+      "sha256": "4d254f4ea0c526fc0c895aa9e1f56c50aa06b7b9be50c6f1d5e9036dbaac364c"
+    },
+    {
+      "id": "film-filters",
+      "kind": "filters",
+      "title": {
+        "tr": "Film Filtreleri",
+        "en": "Film Filters"
+      },
+      "description": {
+        "tr": "Dört hazır renk ön ayarı; kaydırıcılarla ince ayar yapılabilir.",
+        "en": "Four colour presets; fine-tune them with the sliders."
+      },
+      "version": 1,
+      "file": "pack-film-filters-v1.zip",
+      "license": "CC0-1.0",
+      "source": "https://github.com/aliege00/toolspro/releases/tag/packs-v1",
+      "size": 435,
+      "sha256": "1187d07dba5fe36804e968937f52eba10a6707d27b7e1659b38e3abbdddf68f6"
+    },
+    {
+      "id": "extra-fonts",
+      "kind": "fonts",
+      "title": {
+        "tr": "Ekstra Fontlar",
+        "en": "Extra Fonts"
+      },
+      "description": {
+        "tr": "Outfit, Bitter ve JetBrains Mono. SIL OFL 1.1 lisanslı.",
+        "en": "Outfit, Bitter and JetBrains Mono. Licensed under SIL OFL 1.1."
+      },
+      "version": 1,
+      "file": "pack-extra-fonts-v1.zip",
+      "license": "OFL-1.1",
+      "source": "https://github.com/aliege00/toolspro/releases/tag/packs-v1",
+      "size": 312534,
+      "sha256": "c196e2317f761b7de6770a8eed91b25f0b91443fd8594e35a7038f3921d89839"
+    },
+    {
+      "id": "matte-stickers",
+      "kind": "stickers",
+      "title": {
+        "tr": "Mat Çıkartmalar",
+        "en": "Matte Stickers"
+      },
+      "description": {
+        "tr": "Altı sade, mat çıkartma. BeyTool tarafından üretildi (CC0).",
+        "en": "Six plain matte stickers, made by BeyTool (CC0)."
+      },
+      "version": 1,
+      "file": "pack-matte-stickers-v1.zip",
+      "license": "CC0-1.0",
+      "source": "https://github.com/aliege00/toolspro/releases/tag/packs-v1",
+      "size": 11251,
+      "sha256": "4882a1e0c9be086ee853e1dd6214253273344c82681237a5898c3b22c6476bfe"
+    },
+    {
+      "id": "ambient-music",
+      "kind": "music",
+      "title": {
+        "tr": "Sakin Müzik",
+        "en": "Ambient Music"
+      },
+      "description": {
+        "tr": "Üç kısa, sakin enstrümantal döngü. BeyTool tarafından üretildi (CC0).",
+        "en": "Three short calm instrumental loops, made by BeyTool (CC0)."
+      },
+      "version": 1,
+      "file": "pack-ambient-music-v1.zip",
+      "license": "CC0-1.0",
+      "source": "https://github.com/aliege00/toolspro/releases/tag/packs-v1",
+      "size": 1961857,
+      "sha256": "521581c0825d0c1850671c6da7aaa2d0bfd1e3461476a25463961cf21e8c75c7"
+    }
+  ]
+}

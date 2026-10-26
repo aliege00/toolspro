@@ -14,6 +14,7 @@ import {
 } from "./types";
 import { clipGain, clipsAt, resolveEntry, sourceTime } from "./media";
 import { useEditorT } from "./labels";
+import { fontFamilyFor } from "@/packs/install";
 
 function aspectRatio(project: Project): number {
   const found = ASPECTS.find((aspect) => aspect.id === project.aspect);
@@ -55,22 +56,42 @@ function kenBurnsTransform(clip: Clip, time: number): string {
 
 function transitionState(clip: Clip | null, time: number) {
   if (!clip || clip.transitionIn === "none" || clip.transitionDuration <= 0) {
-    return { opacity: 1, transform: "none" };
+    return { opacity: 1, transform: "none", filter: "none", flash: 0 };
   }
   const local = Math.max(0, time - clip.start);
   const progress = Math.min(1, local / clip.transitionDuration);
   if (clip.transitionIn === "fade") {
-    return { opacity: progress, transform: "none" };
+    return { opacity: progress, transform: "none", filter: "none", flash: 0 };
   }
   if (clip.transitionIn === "slide") {
     return {
       opacity: 1,
       transform: `translateX(${(1 - progress) * 24}%)`,
+      filter: "none",
+      flash: 0,
+    };
+  }
+  if (clip.transitionIn === "blur") {
+    return {
+      opacity: 1,
+      transform: "none",
+      filter: `blur(${((1 - progress) * 14).toFixed(2)}px)`,
+      flash: 0,
+    };
+  }
+  if (clip.transitionIn === "flash") {
+    return {
+      opacity: 1,
+      transform: "none",
+      filter: "none",
+      flash: 1 - progress,
     };
   }
   return {
     opacity: 1,
     transform: `scale(${1.12 - progress * 0.12})`,
+    filter: "none",
+    flash: 0,
   };
 }
 
@@ -166,7 +187,7 @@ function OverlayLayer({
     <video
       ref={ref}
       playsInline
-      className="h-full w-full object-cover"
+      className="h-full w-full object-contain"
       style={{ filter: filterStyle(clip), transform: transformStyle(clip) }}
     />
   );
@@ -298,6 +319,7 @@ export default function Preview({
           style={{
             opacity: transition.opacity * (active?.kind === "text" ? 1 : fadeGain),
             transform: transition.transform,
+            filter: transition.filter,
           }}
         >
           {active && active.kind === "video" && activeEntry ? (
@@ -336,6 +358,13 @@ export default function Preview({
           )}
         </div>
 
+        {transition.flash > 0.001 && (
+          <div
+            className="pointer-events-none absolute inset-0 bg-white"
+            style={{ opacity: transition.flash }}
+          />
+        )}
+
         {active?.filter.preset === "vignette" && (
           <div
             className="pointer-events-none absolute inset-0"
@@ -361,7 +390,7 @@ export default function Preview({
               <img
                 src={entry!.url}
                 alt=""
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
                 style={{ filter: filterStyle(clip) }}
               />
             ) : (
@@ -400,11 +429,12 @@ export default function Preview({
                 style={{
                   color: text.color,
                   fontFamily:
-                    text.font === "serif"
+                    fontFamilyFor(text.font) ??
+                    (text.font === "serif"
                       ? "Georgia, 'Times New Roman', serif"
                       : text.font === "mono"
                         ? "ui-monospace, SFMono-Regular, Menlo, monospace"
-                        : "inherit",
+                        : "inherit"),
                   fontSize: `${(text.size / 1080) * 100}cqw`,
                   fontWeight: 600,
                   lineHeight: 1.18,

@@ -136,6 +136,10 @@ const tr = {
   newTrackName: "Katman {n}",
   splitError: "Bölmek için oynatıcıyı bir klibin içine getir.",
   noMedia: "Kitaplıkta uygun dosya yok. Önce Medya Ekle ile seç.",
+  packContent: "Paketlerden",
+  stickers: "Çıkartmalar",
+  packMusic: "Paket müziği",
+  packContentNote: "İndirilen paketler oynatıcı başına eklenir; Ayarlar'dan kaldırılabilir.",
 } as const;
 
 type EditorKey = keyof typeof tr;
@@ -276,6 +280,10 @@ const en: Record<EditorKey, string> = {
   newTrackName: "Layer {n}",
   splitError: "Move the playhead inside a clip to split it.",
   noMedia: "No suitable files in the library. Use Add Media first.",
+  packContent: "From packs",
+  stickers: "Stickers",
+  packMusic: "Pack music",
+  packContentNote: "Downloaded packs are added at the playhead; remove them in Settings.",
 };
 
 const dictionaries = { tr, en };

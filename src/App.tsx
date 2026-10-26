@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/lib/theme";
 import { LocaleProvider } from "@/i18n";
 import { LibraryProvider } from "@/lib/library";
 import { OutputsProvider } from "@/lib/outputs";
+import { PacksProvider } from "@/packs/PacksProvider";
 import { NavProvider, useNav } from "@/lib/nav";
 import type { Route } from "@/lib/nav";
 import Onboarding from "@/screens/Onboarding";
@@ -105,10 +106,12 @@ export default function App() {
           <ThemeProvider>
             <LibraryProvider>
               <OutputsProvider>
-                <Gate />
-                <AudioMiniPlayer />
-                <AudioPlayerSheet />
-                <AnimatePresence>{launching && <LaunchScreen key="launch" />}</AnimatePresence>
+                <PacksProvider>
+                  <Gate />
+                  <AudioMiniPlayer />
+                  <AudioPlayerSheet />
+                  <AnimatePresence>{launching && <LaunchScreen key="launch" />}</AnimatePresence>
+                </PacksProvider>
               </OutputsProvider>
             </LibraryProvider>
           </ThemeProvider>
