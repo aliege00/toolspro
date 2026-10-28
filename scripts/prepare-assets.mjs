@@ -23,6 +23,18 @@ function copyFile(src, destDir) {
   return true;
 }
 
+const fontDir = join(publicDir, "fonts");
+const FONTS = [
+  {
+    name: "DejaVuSans.ttf",
+    url: "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf",
+  },
+  {
+    name: "DejaVuSans-Bold.ttf",
+    url: "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans-Bold.ttf",
+  },
+];
+
 const langDir = join(publicDir, "ocr", "lang");
 const LANGS = [
   {
@@ -112,6 +124,22 @@ async function main() {
     } catch (error) {
       console.warn(
         `[assets] ${lang.code} indirilemedi (${error.message}) — OCR bu dilde çevrimdışı çalışmayabilir`,
+      );
+    }
+  }
+
+  // --- PDF yazı tipleri (PPTX/TXT → PDF; DejaVu, Bitstream Vera licence) ---
+  ensure(fontDir);
+  for (const font of FONTS) {
+    const dest = join(fontDir, font.name);
+    try {
+      if (!existsSync(dest) || statSync(dest).size === 0) {
+        await download(font.url, dest);
+      }
+      console.log(`[assets] ${font.name} hazır`);
+    } catch (error) {
+      console.warn(
+        `[assets] ${font.name} indirilemedi (${error.message}) — PDF metinleri yedek yazı tipiyle çizilir`,
       );
     }
   }

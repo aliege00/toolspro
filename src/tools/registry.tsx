@@ -19,6 +19,7 @@ import {
   RotateIcon,
   WaveformIcon,
   BatchIcon,
+  GaugeIcon,
 } from "@/components/Icons";
 import VideoToMp3 from "./VideoToMp3";
 import VideoTrim from "./VideoTrim";
@@ -42,6 +43,10 @@ import PdfMerge from "./PdfMerge";
 import PdfSplit from "./PdfSplit";
 import RenameTool from "./RenameTool";
 import VoiceRecorder from "./VoiceRecorder";
+import VideoSpeed from "./VideoSpeed";
+import AudioConvert from "./AudioConvert";
+import PptxToPdf from "./PptxToPdf";
+import TextToPdf from "./TextToPdf";
 import type { ToolProps } from "./ToolFrame";
 
 export type ToolMeta = {
@@ -89,6 +94,13 @@ export const tools: ToolMeta[] = [
     component: VideoRotate,
   },
   {
+    id: "video-speed",
+    titleKey: "tool.videoSpeed.title",
+    descKey: "tool.videoSpeed.desc",
+    icon: <GaugeIcon size={24} />,
+    component: VideoSpeed,
+  },
+  {
     id: "ocr",
     titleKey: "tool.ocr.title",
     descKey: "tool.ocr.desc",
@@ -108,6 +120,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.audioJoin.desc",
     icon: <WaveformIcon size={24} />,
     component: AudioJoin,
+  },
+  {
+    id: "audio-convert",
+    titleKey: "tool.audioConvert.title",
+    descKey: "tool.audioConvert.desc",
+    icon: <MusicIcon size={24} />,
+    component: AudioConvert,
   },
   {
     id: "batch",
@@ -157,6 +176,20 @@ export const tools: ToolMeta[] = [
     descKey: "tool.imagePdf.desc",
     icon: <FileIcon size={24} />,
     component: ImageToPdf,
+  },
+  {
+    id: "text-pdf",
+    titleKey: "tool.textPdf.title",
+    descKey: "tool.textPdf.desc",
+    icon: <TextIcon size={24} />,
+    component: TextToPdf,
+  },
+  {
+    id: "pptx-pdf",
+    titleKey: "tool.pptxPdf.title",
+    descKey: "tool.pptxPdf.desc",
+    icon: <FileIcon size={24} />,
+    component: PptxToPdf,
   },
   {
     id: "pdf-merge",

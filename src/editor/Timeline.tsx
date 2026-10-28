@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  Expand,
   FlipHIcon,
   MusicIcon,
   TextIcon,
@@ -20,6 +21,7 @@ type DragState = {
   mode: "move" | TrimEdge;
   startX: number;
   delta: number;
+  snapAt: number | null;
 };
 
 const ROW_HEIGHT: Record<TrackKind, number> = {
@@ -167,6 +169,58 @@ export default function Timeline({
     setPps((current) => Math.max(MIN_PPS, Math.min(MAX_PPS, current * factor)));
   };
 
+  /** Tüm projeyi ekrana sığdırır. */
+  const fitView = () => {
+    const element = scrollRef.current;
+    const available = element?.clientWidth ?? 400;
+    const next = Math.max(MIN_PPS, Math.min(MAX_PPS, (available - 20) / duration));
+    setPps(next);
+    if (element) element.scrollLeft = 0;
+  };
+
+  /**
+   * Sürüklenen kenarı komşu kliplerin sınırlarına ve oynatma kafasına
+   * yapıştırır; kendi sınırları hedef alınmaz ki ilk 8 px ölü olmasın.
+   */
+  const snapDelta = (
+    clip: Clip,
+    delta: number,
+    mode: DragState["mode"],
+  ): { delta: number; at: number | null } => {
+    const threshold = 9 / pps;
+    const targets: number[] = [0, duration, playhead];
+    for (const track of project.tracks) {
+      for (const other of track.clips) {
+        if (other.id === clip.id) continue;
+        targets.push(other.start, clipEnd(other));
+      }
+    }
+    const candidates =
+      mode === "move"
+        ? [
+            { current: clip.start + delta, origin: clip.start },
+            { current: clipEnd(clip) + delta, origin: clipEnd(clip) },
+          ]
+        : mode === "left"
+          ? [{ current: clip.start + delta, origin: clip.start }]
+          : [{ current: clipEnd(clip) + delta, origin: clipEnd(clip) }];
+
+    let bestDelta: number | null = null;
+    let bestAt: number | null = null;
+    let bestDistance = threshold;
+    for (const target of targets) {
+      for (const candidate of candidates) {
+        const distance = Math.abs(target - candidate.current);
+        if (distance <= bestDistance) {
+          bestDistance = distance;
+          bestDelta = delta + (target - candidate.current);
+          bestAt = target;
+        }
+      }
+    }
+    return { delta: bestDelta ?? delta, at: bestAt };
+  };
+
   const beginDrag = (
     event: React.PointerEvent,
     clip: Clip,
@@ -184,14 +238,20 @@ export default function Timeline({
       mode,
       startX: event.clientX,
       delta: 0,
+      snapAt: null,
     });
   };
 
   const moveDrag = (event: React.PointerEvent) => {
     if (!drag) return;
+    const clip = project.tracks
+      .find((track) => track.id === drag.trackId)
+      ?.clips.find((item) => item.id === drag.clipId);
+    const raw = (event.clientX - drag.startX) / pps;
+    const snapped = clip ? snapDelta(clip, raw, drag.mode) : { delta: raw, at: null };
     setDrag((current) =>
       current
-        ? { ...current, delta: (event.clientX - current.startX) / pps }
+        ? { ...current, delta: snapped.delta, snapAt: snapped.at }
         : current,
     );
   };
@@ -201,7 +261,8 @@ export default function Timeline({
     const clip = project.tracks
       .find((track) => track.id === drag.trackId)
       ?.clips.find((item) => item.id === drag.clipId);
-    const delta = (event.clientX - drag.startX) / pps;
+    // Son fare konumu yerine, ekranda gördüğümüz yapışmış delta uygulanır.
+    const delta = drag.delta;
     setDrag(null);
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -242,6 +303,15 @@ export default function Timeline({
             aria-label={t("zoomIn")}
           >
             +
+          </button>
+          <button
+            type="button"
+            onClick={fitView}
+            className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-fill text-ink2 active:opacity-60"
+            aria-label={t("fitView")}
+            title={t("fitView")}
+          >
+            <Expand size={13} />
           </button>
         </div>
       </div>
@@ -434,6 +504,13 @@ export default function Timeline({
             >
               <span className="absolute -top-0 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 rounded-[2px] bg-ink" />
             </div>
+
+            {drag?.snapAt != null && (
+              <div
+                className="pointer-events-none absolute top-0 bottom-0 z-20 border-l border-dashed border-ink/60"
+                style={{ left: drag.snapAt * pps }}
+              />
+            )}
           </div>
         </div>
       </div>
