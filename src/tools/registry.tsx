@@ -49,6 +49,7 @@ import RenameTool from "./RenameTool";
 import VoiceRecorder from "./VoiceRecorder";
 import VideoSpeed from "./VideoSpeed";
 import AudioConvert from "./AudioConvert";
+import AudioSpeed from "./AudioSpeed";
 import PptxToPdf from "./PptxToPdf";
 import TextToPdf from "./TextToPdf";
 import type { ToolProps } from "./ToolFrame";
@@ -145,6 +146,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.audioJoin.desc",
     icon: <WaveformIcon size={24} />,
     component: AudioJoin,
+  },
+  {
+    id: "audio-speed",
+    titleKey: "tool.audioSpeed.title",
+    descKey: "tool.audioSpeed.desc",
+    icon: <GaugeIcon size={24} />,
+    component: AudioSpeed,
   },
   {
     id: "audio-convert",

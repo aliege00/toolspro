@@ -462,6 +462,15 @@ const tr = {
   "tool.batch.title": "Toplu Dönüştür",
   "tool.batch.desc": "Birden çok dosyayı tek seferde işle",
 
+  "tool.audioSpeed.title": "Ses Hızı / Seviye",
+  "tool.audioSpeed.desc": "Hızı ve ses seviyesini ayarla",
+  "audioSpeed.speed": "Hız",
+  "audioSpeed.volume": "Ses seviyesi",
+  "audioSpeed.note":
+    "Hız değişimi perdeyi korur; çıktı MP3 (192 kbps) olur. Videodan yalnızca ses alınır.",
+  "audioSpeed.run": "Uygula",
+  "audioSpeed.error": "Ses işlenemedi; dosyada ses izi yok veya codec desteklenmiyor.",
+
   "tool.subBurn.title": "Altyazı Göm",
   "tool.subBurn.desc": ".srt altyazıyı videoya göm",
   "subBurn.file": "Altyazı dosyası",
@@ -986,6 +995,15 @@ const en: Record<TKey, string> = {
   "tool.audioJoin.desc": "Join clips into one MP3",
   "tool.batch.title": "Batch Convert",
   "tool.batch.desc": "Process several files at once",
+
+  "tool.audioSpeed.title": "Audio Speed / Level",
+  "tool.audioSpeed.desc": "Adjust playback speed and volume",
+  "audioSpeed.speed": "Speed",
+  "audioSpeed.volume": "Volume",
+  "audioSpeed.note":
+    "Speed changes preserve pitch; the output is MP3 (192 kbps). Video files contribute audio only.",
+  "audioSpeed.run": "Apply",
+  "audioSpeed.error": "Could not process the audio; there is no audio track or the codec is unsupported.",
 
   "tool.subBurn.title": "Burn Subtitles",
   "tool.subBurn.desc": "Burn a .srt subtitle file into a video",
