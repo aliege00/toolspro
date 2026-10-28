@@ -50,6 +50,7 @@ import PdfMerge from "./PdfMerge";
 import PdfSplit from "./PdfSplit";
 import PdfOrganize from "./PdfOrganize";
 import PdfToImage from "./PdfToImage";
+import ScannerTool from "./ScannerTool";
 import RenameTool from "./RenameTool";
 import VoiceRecorder from "./VoiceRecorder";
 import VideoSpeed from "./VideoSpeed";
@@ -270,6 +271,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.pdfToImage.desc",
     icon: <ImageIcon size={24} />,
     component: PdfToImage,
+  },
+  {
+    id: "scanner",
+    titleKey: "tool.scanner.title",
+    descKey: "tool.scanner.desc",
+    icon: <CameraIcon size={24} />,
+    component: ScannerTool,
   },
   {
     id: "zip",
