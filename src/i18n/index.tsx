@@ -255,6 +255,18 @@ const tr = {
   "settings.pinVerify": "Mevcut PIN'i gir",
   "settings.about": "Sürüm",
   "settings.note": "Dil, renk ve PIN tercihleri bu cihazda saklanır.",
+  "settings.errorLog": "Hata günlüğü",
+  "settings.errorLogNote":
+    "Yakalanan hatalar bu cihazda tutulur; son 40 kayıt gösterilir. Günlük yalnızca sorun gidermek içindir.",
+  "settings.errorLogEmpty": "Kayıtlı hata yok.",
+  "settings.errorLogClear": "Günlüğü temizle",
+  "settings.errorLogCount": "{n} kayıt",
+  "settings.errorLogCopyFail": "Panoya kopyalanamadı.",
+  "error.boundaryTitle": "Bir şeyler ters gitti",
+  "error.boundaryDesc":
+    "Uygulama beklenmeyen bir hata yakaladı. Sayfayı yenileyebilir veya hata metnini kopyalayıp Ayarlar > Hata günlüğü ile paylaşabilirsin.",
+  "error.reload": "Yeniden yükle",
+  "error.copy": "Hata metnini kopyala",
   "settings.packs": "Paketler",
   "settings.packsNote":
     "Geçişler, filtreler, fontlar, çıkartmalar ve müzik GitHub Releases'ten indirilir. İndirmeden önce boyut ve lisans gösterilir; her paket SHA-256 ile doğrulanır.",
@@ -720,6 +732,18 @@ const en: Record<TKey, string> = {
   "settings.pinVerify": "Enter your current PIN",
   "settings.about": "Version",
   "settings.note": "Language, color and PIN preferences are stored on this device.",
+  "settings.errorLog": "Error log",
+  "settings.errorLogNote":
+    "Caught errors are kept on this device; the last 40 entries are shown. The log is only meant for troubleshooting.",
+  "settings.errorLogEmpty": "No errors recorded.",
+  "settings.errorLogClear": "Clear log",
+  "settings.errorLogCount": "{n} entries",
+  "settings.errorLogCopyFail": "Could not copy to the clipboard.",
+  "error.boundaryTitle": "Something went wrong",
+  "error.boundaryDesc":
+    "The app caught an unexpected error. Reload the page or copy the error text and share it via Settings > Error log.",
+  "error.reload": "Reload",
+  "error.copy": "Copy error text",
   "settings.packs": "Packs",
   "settings.packsNote":
     "Transitions, filters, fonts, stickers and music are downloaded from GitHub Releases. Size and license are shown before downloading; every pack is verified with SHA-256.",

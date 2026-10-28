@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button, NavBar, ProgressBar, Segmented, Toggle } from "@/components/ui";
 import PinPad from "@/components/PinPad";
@@ -8,8 +8,15 @@ import type { Lang } from "@/i18n";
 import { useNav } from "@/lib/nav";
 import { useTheme } from "@/lib/theme";
 import { clearPin, hasPin, setPin, verifyPin } from "@/lib/security";
-import { formatBytes } from "@/lib/files";
+import { formatBytes, formatDate } from "@/lib/files";
 import { isNative } from "@/lib/native";
+import { copyText } from "@/lib/clipboard";
+import {
+  clearErrorLog,
+  formatErrorLog,
+  getErrorLog,
+  subscribeErrorLog,
+} from "@/lib/errorLog";
 import { usePacks } from "@/packs/PacksProvider";
 
 export const ACCENTS: { id: string; label: string; swatch: string }[] = [
@@ -57,6 +64,8 @@ export default function Settings() {
 
   const [confirmPack, setConfirmPack] = useState<string | null>(null);
   const [confirmRemovePack, setConfirmRemovePack] = useState<string | null>(null);
+  const errors = useSyncExternalStore(subscribeErrorLog, getErrorLog, getErrorLog);
+  const [logCopied, setLogCopied] = useState<"idle" | "ok" | "fail">("idle");
 
   const [pinFlow, setPinFlow] = useState<Flow | null>(null);
   const [needVerify, setNeedVerify] = useState(false);
@@ -67,6 +76,12 @@ export default function Settings() {
   const showToast = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(null), 1800);
+  };
+
+  const copyLog = async () => {
+    const ok = await copyText(formatErrorLog());
+    setLogCopied(ok ? "ok" : "fail");
+    window.setTimeout(() => setLogCopied("idle"), 1800);
   };
 
   const startFlow = (flow: Flow) => {
@@ -383,6 +398,61 @@ export default function Settings() {
         </motion.section>
 
         <motion.section className="mt-6" {...rise(5)}>
+          <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
+            {t("settings.errorLog")}
+          </h2>
+          <div className="rounded-[16px] bg-card p-4 shadow-[var(--shadow-card)]">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[12.5px] leading-[1.5] text-ink2">
+                {t("settings.errorLogNote")}
+              </p>
+              <span className="shrink-0 text-[11.5px] text-ink3">
+                {t("settings.errorLogCount", { n: errors.length })}
+              </span>
+            </div>
+
+            {errors.length === 0 ? (
+              <p className="mt-3 rounded-[10px] bg-fill px-3 py-2.5 text-[12.5px] text-ink2">
+                {t("settings.errorLogEmpty")}
+              </p>
+            ) : (
+              <div className="no-scrollbar mt-3 max-h-[260px] space-y-2 overflow-y-auto">
+                {errors.map((entry) => (
+                  <div key={entry.id} className="rounded-[10px] bg-fill px-3 py-2">
+                    <div className="flex items-center justify-between gap-2 text-[10.5px] text-ink3">
+                      <span className="truncate">{entry.source}</span>
+                      <span className="shrink-0">{formatDate(entry.at)}</span>
+                    </div>
+                    <p className="mt-0.5 text-[12px] leading-[1.45] break-words text-ink">
+                      {entry.message}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-3 flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={errors.length === 0}
+                onClick={() => void copyLog()}
+              >
+                {logCopied === "ok" ? t("common.copied") : t("common.copy")}
+              </Button>
+              {errors.length > 0 && (
+                <Button size="sm" variant="ghost" onClick={clearErrorLog}>
+                  {t("settings.errorLogClear")}
+                </Button>
+              )}
+            </div>
+            {logCopied === "fail" && (
+              <p className="mt-2 text-[12px] text-danger">{t("settings.errorLogCopyFail")}</p>
+            )}
+          </div>
+        </motion.section>
+
+        <motion.section className="mt-6" {...rise(6)}>
           <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
             {t("settings.about")}
           </h2>

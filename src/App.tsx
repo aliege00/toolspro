@@ -4,11 +4,13 @@ import { Capacitor } from "@capacitor/core";
 import type { PluginListenerHandle } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
 import { LaunchScreen } from "@/components/Brand";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AudioMiniPlayer, AudioPlayerSheet } from "@/components/AudioPlayer";
 import { AudioProvider, useAudioActive } from "@/lib/audio";
 import { ThemeProvider } from "@/lib/theme";
 import { LocaleProvider } from "@/i18n";
 import { LibraryProvider } from "@/lib/library";
+import { installGlobalErrorLogging } from "@/lib/errorLog";
 import { OutputsProvider } from "@/lib/outputs";
 import { PacksProvider } from "@/packs/PacksProvider";
 import { NavProvider, useNav } from "@/lib/nav";
@@ -120,6 +122,8 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => installGlobalErrorLogging(), []);
+
   return (
     <MotionConfig reducedMotion="user">
       <LocaleProvider>
@@ -128,7 +132,9 @@ export default function App() {
             <LibraryProvider>
               <OutputsProvider>
                 <PacksProvider>
-                  <Gate />
+                  <ErrorBoundary>
+                    <Gate />
+                  </ErrorBoundary>
                   <AudioMiniPlayer />
                   <AudioPlayerSheet />
                   <AnimatePresence>{launching && <LaunchScreen key="launch" />}</AnimatePresence>

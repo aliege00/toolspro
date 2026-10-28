@@ -8,6 +8,7 @@ import { FFMPEG_WARN_BYTES } from "@/lib/ffmpeg";
 import { useOutputs } from "@/lib/outputs";
 import type { Output } from "@/lib/outputs";
 import { useLibrary } from "@/lib/library";
+import { logError } from "@/lib/errorLog";
 import { saveBlob } from "@/lib/native";
 import { useT } from "@/i18n";
 
@@ -132,6 +133,7 @@ export function useRunner() {
           setStatus("cancelled");
           return;
         }
+        logError(tool, e);
         setError(e instanceof Error ? e.message : "İşlem tamamlanamadı.");
         setStatus("error");
       }
