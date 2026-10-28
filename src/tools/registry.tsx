@@ -29,6 +29,7 @@ import VideoCompress from "./VideoCompress";
 import VideoRotate from "./VideoRotate";
 import VideoMute from "./VideoMute";
 import VideoWatermark from "./VideoWatermark";
+import SubtitleBurn from "./SubtitleBurn";
 import OcrTool from "./OcrTool";
 import AudioTrim from "./AudioTrim";
 import AudioJoin from "./AudioJoin";
@@ -109,6 +110,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.videoWatermark.desc",
     icon: <TextIcon size={24} />,
     component: VideoWatermark,
+  },
+  {
+    id: "subtitle-burn",
+    titleKey: "tool.subBurn.title",
+    descKey: "tool.subBurn.desc",
+    icon: <LayersIcon size={24} />,
+    component: SubtitleBurn,
   },
   {
     id: "video-speed",
