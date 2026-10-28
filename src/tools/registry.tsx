@@ -37,6 +37,7 @@ import BatchConvert from "./BatchConvert";
 import ImageCompress from "./ImageCompress";
 import ImageConvert from "./ImageConvert";
 import ImageEdit from "./ImageEdit";
+import ImageMetadata from "./ImageMetadata";
 import ZipTool from "./ZipTool";
 import HashTool from "./HashTool";
 import VideoInfo from "./VideoInfo";
@@ -182,6 +183,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.imageEdit.desc",
     icon: <RotateIcon size={24} />,
     component: ImageEdit,
+  },
+  {
+    id: "image-metadata",
+    titleKey: "tool.imageMetadata.title",
+    descKey: "tool.imageMetadata.desc",
+    icon: <ShieldIcon size={24} />,
+    component: ImageMetadata,
   },
   {
     id: "image-convert",

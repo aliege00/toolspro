@@ -462,6 +462,14 @@ const tr = {
   "tool.batch.title": "Toplu Dönüştür",
   "tool.batch.desc": "Birden çok dosyayı tek seferde işle",
 
+  "tool.imageMetadata.title": "Meta Veri Sil",
+  "tool.imageMetadata.desc": "EXIF ve konum bilgisini kaldır",
+  "imageMetadata.note":
+    "Görsel yeniden kodlanır; EXIF, GPS konumu, kamera modeli ve çekim tarihi dahil tüm meta veriler kaldırılır. Yön bilgisi piksellere uygulanır. PNG/WebP'de saydamlık korunur.",
+  "imageMetadata.formatNote": "JPEG en küçük dosyayı verir; PNG kayıpsızdır.",
+  "imageMetadata.run": "Meta Veriyi Sil",
+  "imageMetadata.error": "Görsel işlenemedi; dosya desteklenmiyor olabilir.",
+
   "tool.imageEdit.title": "Görsel Düzenle",
   "tool.imageEdit.desc": "Boyutlandır, kırp, döndür ve çevir",
   "imageEdit.preview": "Düzenleme önizlemesi",
@@ -1008,6 +1016,14 @@ const en: Record<TKey, string> = {
   "tool.audioJoin.desc": "Join clips into one MP3",
   "tool.batch.title": "Batch Convert",
   "tool.batch.desc": "Process several files at once",
+
+  "tool.imageMetadata.title": "Strip Metadata",
+  "tool.imageMetadata.desc": "Remove EXIF and location data",
+  "imageMetadata.note":
+    "The image is re-encoded and all metadata is removed, including EXIF, GPS location, camera model and capture date. Orientation is applied to pixels. Transparency is kept for PNG/WebP.",
+  "imageMetadata.formatNote": "JPEG produces the smallest file; PNG is lossless.",
+  "imageMetadata.run": "Strip Metadata",
+  "imageMetadata.error": "Could not process the image; this file may be unsupported.",
 
   "tool.imageEdit.title": "Edit Image",
   "tool.imageEdit.desc": "Resize, crop, rotate and flip",
