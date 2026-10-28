@@ -244,6 +244,10 @@ const tr = {
   "settings.pinSet": "PIN oluştur",
   "settings.pinChange": "PIN'i değiştir",
   "settings.pinRemove": "PIN'i kaldır",
+  "settings.hiddenNote":
+    "Gizli dosyalar şifrelenmez; yalnızca uygulama listesinden gizlenir. PIN unutulursa kurtarma yolu yoktur; PIN'i sıfırlama özelliği bulunmaz.",
+  "settings.libraryNote":
+    "Kitaplığa ve gizli klasöre eklenen dosyalar aynı özel depoya kopyalanır; uygulama kapansa da listede kalır.",
   "settings.pinSaved": "PIN kaydedildi",
   "settings.pinRemoved": "PIN kaldırıldı",
   "settings.pinWrong": "PIN hatalı",
@@ -705,6 +709,10 @@ const en: Record<TKey, string> = {
   "settings.pinSet": "Create PIN",
   "settings.pinChange": "Change PIN",
   "settings.pinRemove": "Remove PIN",
+  "settings.hiddenNote":
+    "Hidden files are not encrypted; they are only hidden from the app's lists. If you forget the PIN there is no recovery path and no PIN reset option.",
+  "settings.libraryNote":
+    "Files added to the library and the hidden folder are copied to the same private storage, so they remain listed after the app restarts.",
   "settings.pinSaved": "PIN saved",
   "settings.pinRemoved": "PIN removed",
   "settings.pinWrong": "Wrong PIN",

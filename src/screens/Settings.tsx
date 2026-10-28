@@ -191,6 +191,12 @@ export default function Settings() {
                 </Button>
               )}
             </div>
+            <p className="border-t border-line px-4 py-3 text-[12px] leading-[1.5] text-ink2">
+              {t("settings.hiddenNote")}
+            </p>
+            <p className="border-t border-line px-4 py-3 text-[12px] leading-[1.5] text-ink3">
+              {t("settings.libraryNote")}
+            </p>
           </div>
         </motion.section>
 
