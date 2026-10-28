@@ -22,6 +22,7 @@ import {
   GaugeIcon,
   VolumeIcon,
   SortIcon,
+  ClockIcon,
 } from "@/components/Icons";
 import VideoToMp3 from "./VideoToMp3";
 import VideoTrim from "./VideoTrim";
@@ -31,6 +32,7 @@ import VideoRotate from "./VideoRotate";
 import VideoMute from "./VideoMute";
 import VideoWatermark from "./VideoWatermark";
 import SubtitleBurn from "./SubtitleBurn";
+import SrtEditor from "./SrtEditor";
 import OcrTool from "./OcrTool";
 import AudioTrim from "./AudioTrim";
 import AudioJoin from "./AudioJoin";
@@ -125,6 +127,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.subBurn.desc",
     icon: <LayersIcon size={24} />,
     component: SubtitleBurn,
+  },
+  {
+    id: "srt-edit",
+    titleKey: "tool.srt.title",
+    descKey: "tool.srt.desc",
+    icon: <ClockIcon size={24} />,
+    component: SrtEditor,
   },
   {
     id: "video-speed",
