@@ -78,16 +78,24 @@ export function useToolFile(initialFileId?: string, accept?: string) {
 type RunResult = { blob: Blob; name: string };
 
 /** Uzun süren işlemlerde gösterilen hafif uyarı; işlemi engellemez. */
-export function SizeWarning({ bytes }: { bytes: number }) {
+export function SizeWarning({
+  bytes,
+  threshold = FFMPEG_WARN_BYTES,
+  messageKey = "run.largeFile",
+}: {
+  bytes: number;
+  threshold?: number;
+  messageKey?: string;
+}) {
   const t = useT();
-  if (!bytes || bytes < FFMPEG_WARN_BYTES) return null;
+  if (!bytes || bytes < threshold) return null;
   return (
     <motion.p
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-[12px] bg-fill px-3.5 py-3 text-[12.5px] leading-[1.45] text-ink2"
     >
-      {t("run.largeFile", { size: formatBytes(bytes) })}
+      {t(messageKey, { size: formatBytes(bytes) })}
     </motion.p>
   );
 }

@@ -2,20 +2,21 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui";
 import { FileIcon, PlusIcon, XMark } from "@/components/Icons";
-import { formatBytes, pickFiles } from "@/lib/files";
+import { ARCHIVE_WARN_BYTES, formatBytes, pickFiles } from "@/lib/files";
 import {
   OutputCard,
   RunArea,
+  SizeWarning,
   ToolSection,
   useRunner,
 } from "./ToolFrame";
-import { createZip } from "@/lib/media";
+import { createZipStreaming } from "@/lib/media";
 import { useT } from "@/i18n";
 
 export default function ZipTool() {
   const t = useT();
   const [files, setFiles] = useState<File[]>([]);
-  const { status, progress, error, result, run } = useRunner();
+  const { status, progress, error, result, run, cancel } = useRunner();
 
   const addFiles = async () => {
     const picked = await pickFiles({ multiple: true });
@@ -37,10 +38,10 @@ export default function ZipTool() {
 
   const start = () => {
     if (files.length === 0) return;
-    void run("Arşiv (ZIP)", async (onProgress) => {
-      const blob = await createZip(files, onProgress);
+    void run("Arşiv (ZIP)", async (onProgress, signal) => {
+      const blob = await createZipStreaming(files, onProgress, signal);
       const stamp = new Date().toISOString().slice(0, 10);
-      return { blob, name: `medya-${stamp}.zip` };
+      return { blob, name: `beytool-${stamp}.zip` };
     });
   };
 
@@ -103,6 +104,12 @@ export default function ZipTool() {
         )}
       </ToolSection>
 
+      <SizeWarning
+        bytes={total}
+        threshold={ARCHIVE_WARN_BYTES}
+        messageKey="run.largeZip"
+      />
+
       <RunArea
         status={status}
         progress={progress}
@@ -110,6 +117,7 @@ export default function ZipTool() {
         onRun={start}
         runLabel={t("zip.run")}
         disabled={files.length === 0}
+        onCancel={cancel}
       />
 
       {result && <OutputCard output={result} />}

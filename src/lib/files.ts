@@ -1,5 +1,10 @@
 export type Kind = "video" | "audio" | "image" | "other";
 
+/** ZIP oluştururken toplam boyut bu eşiği aşarsa bellek uyarısı gösterilir. */
+export const ARCHIVE_WARN_BYTES = 300 * 1024 * 1024;
+/** OCR büyük görsellerde uzun sürer; bu eşikte uyarı gösterilir. */
+export const OCR_WARN_BYTES = 12 * 1024 * 1024;
+
 const VIDEO_EXT = [
   "mp4", "m4v", "mkv", "webm", "mov", "avi", "3gp", "ts", "flv", "wmv", "mpg", "mpeg", "ogv", "vob",
 ];

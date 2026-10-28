@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Button, Segmented } from "@/components/ui";
-import { OutputCard, RunArea, ToolSection, useRunner } from "./ToolFrame";
-import { pickFiles } from "@/lib/files";
+import { OutputCard, RunArea, SizeWarning, ToolSection, useRunner } from "./ToolFrame";
+import { OCR_WARN_BYTES, pickFiles } from "@/lib/files";
 import { useT } from "@/i18n";
 
 const OFFLINE_LANGS = [
@@ -32,7 +32,7 @@ export default function OcrTool() {
   const [lang, setLang] = useState("tur");
   const [text, setText] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const { status, progress, error, result: output, run } = useRunner();
+  const { status, progress, error, result: output, run, cancel } = useRunner();
 
   const offline = lang === "tur" || lang === "eng";
   const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
@@ -56,7 +56,8 @@ export default function OcrTool() {
 
   const start = () => {
     if (!file) return;
-    void run("OCR", async (onProgress) => {
+    void run("OCR", async (onProgress, signal) => {
+      if (signal.aborted) throw new DOMException("İptal", "AbortError");
       onProgress(0.05);
       const { createWorker } = await import("tesseract.js");
       const base = import.meta.env.BASE_URL;
@@ -78,8 +79,18 @@ export default function OcrTool() {
         },
       });
 
+      let terminated = false;
+      const stop = () => {
+        if (terminated) return;
+        terminated = true;
+        void worker.terminate();
+      };
+      signal.addEventListener("abort", stop, { once: true });
+
       try {
+        if (signal.aborted) throw new DOMException("İptal", "AbortError");
         const result = await worker.recognize(file);
+        if (signal.aborted) throw new DOMException("İptal", "AbortError");
         const extracted = (result.data.text ?? "").trim();
         if (!extracted) throw new Error(t("ocr.empty"));
         onProgress(1);
@@ -88,7 +99,8 @@ export default function OcrTool() {
           name: "yazi.txt",
         };
       } finally {
-        await worker.terminate();
+        signal.removeEventListener("abort", stop);
+        if (!terminated) await worker.terminate();
       }
     }).then(() => undefined);
   };
@@ -144,6 +156,12 @@ export default function OcrTool() {
         </button>
       </ToolSection>
 
+      <SizeWarning
+        bytes={file?.size ?? 0}
+        threshold={OCR_WARN_BYTES}
+        messageKey="run.largeOcr"
+      />
+
       <ToolSection title={t("ocr.lang")}>
         <div className="space-y-3">
           <Segmented
@@ -183,6 +201,7 @@ export default function OcrTool() {
         onRun={start}
         runLabel={t("ocr.run")}
         disabled={!file}
+        onCancel={cancel}
       />
 
       {text && (

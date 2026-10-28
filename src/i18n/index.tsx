@@ -437,6 +437,10 @@ const tr = {
     "Bu dosya {size}. Dosyalar işlem sırasında bellekte tutulur; büyük dosyalarda işlem uzun sürebilir veya cihazın belleği yetmeyebilir.",
   "run.cancel": "İptal",
   "run.cancelled": "İptal edildi.",
+  "run.largeOcr":
+    "Bu görsel {size}. OCR büyük görsellerde uzun sürebilir ve cihaz belleğini zorlayabilir; gerekirse görseli küçültüp yeniden dene.",
+  "run.largeZip":
+    "Toplam {size}. ZIP oluştururken dosyalar bellekte tutulur; büyük arşivlerde işlem uzun sürebilir veya cihazın belleği yetmeyebilir.",
 
   "audio.player": "Ses Çalar",
   "audio.position": "Konum",
@@ -914,6 +918,10 @@ const en: Record<TKey, string> = {
     "This file is {size}. Files are held in memory while processing; large files can take a long time or exceed the device's memory.",
   "run.cancel": "Cancel",
   "run.cancelled": "Cancelled.",
+  "run.largeOcr":
+    "This image is {size}. OCR can take a long time on large images and may exhaust device memory; resize the image and try again if needed.",
+  "run.largeZip":
+    "{size} in total. ZIP creation keeps data in memory; large archives can take a long time or exceed the device's memory.",
 
   "audio.player": "Audio Player",
   "audio.position": "Position",

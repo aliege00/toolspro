@@ -1,5 +1,5 @@
 import { Mp3Encoder } from "@breezystack/lamejs";
-import { zipSync } from "fflate";
+import { Zip, ZipDeflate, zipSync } from "fflate";
 
 const MP3_RATES = [8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000];
 
@@ -266,11 +266,13 @@ export async function sha256Hex(
 export async function createZip(
   files: File[],
   onProgress: (ratio: number) => void,
+  signal?: AbortSignal,
 ): Promise<Blob> {
   const entries: Record<string, Uint8Array> = {};
   const used = new Set<string>();
   let done = 0;
   for (const file of files) {
+    if (signal?.aborted) throw new DOMException("İşlem iptal edildi.", "AbortError");
     let name = file.name;
     let n = 2;
     while (used.has(name)) {
@@ -287,9 +289,70 @@ export async function createZip(
     onProgress((done / files.length) * 0.8);
     await yieldToUI();
   }
+  if (signal?.aborted) throw new DOMException("İşlem iptal edildi.", "AbortError");
   const zipped = zipSync(entries, { level: 6 });
   onProgress(1);
   return new Blob([zipped as unknown as BlobPart], { type: "application/zip" });
+}
+
+/**
+ * Akışlı ZIP: dosyalar tek tek sıkıştırılır, ilerleme ve iptal desteklenir.
+ * Tüm arşiv aynı anda bellekte tutulmaz.
+ */
+export async function createZipStreaming(
+  files: File[],
+  onProgress: (ratio: number) => void,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const used = new Set<string>();
+  const chunks: Uint8Array[] = [];
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    const zip = new Zip((error, data, final) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      if (data.length > 0) chunks.push(data);
+      if (final) {
+        resolve(new Blob(chunks as unknown as BlobPart[], { type: "application/zip" }));
+      }
+    });
+
+    void (async () => {
+      try {
+        for (let i = 0; i < files.length; i += 1) {
+          if (signal?.aborted) throw new DOMException("İşlem iptal edildi.", "AbortError");
+          const file = files[i];
+          let name = file.name;
+          let n = 2;
+          while (used.has(name)) {
+            const dot = file.name.lastIndexOf(".");
+            name =
+              dot === -1
+                ? `${file.name} (${n})`
+                : `${file.name.slice(0, dot)} (${n})${file.name.slice(dot)}`;
+            n += 1;
+          }
+          used.add(name);
+
+          const entry = new ZipDeflate(name, { level: 6 });
+          zip.add(entry);
+          entry.push(new Uint8Array(await file.arrayBuffer()), true);
+          onProgress(((i + 1) / files.length) * 0.95);
+          await yieldToUI();
+        }
+        if (signal?.aborted) throw new DOMException("İşlem iptal edildi.", "AbortError");
+        zip.end();
+        onProgress(1);
+      } catch (error) {
+        zip.terminate();
+        reject(error);
+      }
+    })();
+  });
+
+  return blob;
 }
 
 /** Videonun belirli bir saniyesinden PNG kare çıkarır. */
