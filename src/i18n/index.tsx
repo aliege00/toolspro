@@ -462,6 +462,15 @@ const tr = {
   "tool.batch.title": "Toplu Dönüştür",
   "tool.batch.desc": "Birden çok dosyayı tek seferde işle",
 
+  "tool.pdfToImage.title": "PDF → Görsel",
+  "tool.pdfToImage.desc": "PDF sayfalarını PNG/JPEG yap",
+  "pdfToImage.quality": "Çözünürlük ve biçim",
+  "pdfToImage.note":
+    "Her sayfa ayrı görüntü olarak işlenir; birden fazla sayfa ZIP olarak paketlenir. Yüksek çözünürlük daha çok bellek kullanır.",
+  "pdfToImage.run": "Görsellere Çevir",
+  "pdfToImage.error":
+    "PDF açılamadı; dosya bozuk veya parola korumalı olabilir.",
+
   "tool.pdfOrganize.title": "PDF Sayfaları",
   "tool.pdfOrganize.desc": "Sayfa sil ve sırala",
   "pdfOrganize.kept": "{n} sayfa korunuyor",
@@ -1027,6 +1036,14 @@ const en: Record<TKey, string> = {
   "tool.audioJoin.desc": "Join clips into one MP3",
   "tool.batch.title": "Batch Convert",
   "tool.batch.desc": "Process several files at once",
+
+  "tool.pdfToImage.title": "PDF → Images",
+  "tool.pdfToImage.desc": "Render PDF pages as PNG/JPEG",
+  "pdfToImage.quality": "Resolution and format",
+  "pdfToImage.note":
+    "Each page becomes a separate image; multiple pages are packed as a ZIP. Higher resolution uses more memory.",
+  "pdfToImage.run": "Convert to Images",
+  "pdfToImage.error": "Could not open the PDF; the file may be corrupt or password-protected.",
 
   "tool.pdfOrganize.title": "PDF Pages",
   "tool.pdfOrganize.desc": "Delete and reorder pages",

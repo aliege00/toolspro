@@ -49,6 +49,7 @@ import ImageToPdf from "./ImageToPdf";
 import PdfMerge from "./PdfMerge";
 import PdfSplit from "./PdfSplit";
 import PdfOrganize from "./PdfOrganize";
+import PdfToImage from "./PdfToImage";
 import RenameTool from "./RenameTool";
 import VoiceRecorder from "./VoiceRecorder";
 import VideoSpeed from "./VideoSpeed";
@@ -262,6 +263,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.pdfSplit.desc",
     icon: <ScissorsIcon size={24} />,
     component: PdfSplit,
+  },
+  {
+    id: "pdf-image",
+    titleKey: "tool.pdfToImage.title",
+    descKey: "tool.pdfToImage.desc",
+    icon: <ImageIcon size={24} />,
+    component: PdfToImage,
   },
   {
     id: "zip",
