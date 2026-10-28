@@ -36,6 +36,7 @@ import AudioJoin from "./AudioJoin";
 import BatchConvert from "./BatchConvert";
 import ImageCompress from "./ImageCompress";
 import ImageConvert from "./ImageConvert";
+import ImageEdit from "./ImageEdit";
 import ZipTool from "./ZipTool";
 import HashTool from "./HashTool";
 import VideoInfo from "./VideoInfo";
@@ -174,6 +175,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.imageCompress.desc",
     icon: <CompressIcon size={24} />,
     component: ImageCompress,
+  },
+  {
+    id: "image-edit",
+    titleKey: "tool.imageEdit.title",
+    descKey: "tool.imageEdit.desc",
+    icon: <RotateIcon size={24} />,
+    component: ImageEdit,
   },
   {
     id: "image-convert",

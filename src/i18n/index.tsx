@@ -462,6 +462,19 @@ const tr = {
   "tool.batch.title": "Toplu Dönüştür",
   "tool.batch.desc": "Birden çok dosyayı tek seferde işle",
 
+  "tool.imageEdit.title": "Görsel Düzenle",
+  "tool.imageEdit.desc": "Boyutlandır, kırp, döndür ve çevir",
+  "imageEdit.preview": "Düzenleme önizlemesi",
+  "imageEdit.transform": "Döndür ve çevir",
+  "imageEdit.crop": "Kırpma oranı",
+  "imageEdit.free": "Serbest",
+  "imageEdit.cropNote": "Kırpma görüntünün ortasından yapılır.",
+  "imageEdit.size": "Boyut ve biçim",
+  "imageEdit.note":
+    "Genişlik değiştirildiğinde yükseklik oranı korunur. Kaydetme görüntüyü yeniden kodlar; bu işlem meta verileri de temizler.",
+  "imageEdit.run": "Düzenlemeyi Uygula",
+  "imageEdit.error": "Görsel oluşturulamadı; dosya desteklenmiyor olabilir.",
+
   "tool.audioSpeed.title": "Ses Hızı / Seviye",
   "tool.audioSpeed.desc": "Hızı ve ses seviyesini ayarla",
   "audioSpeed.speed": "Hız",
@@ -995,6 +1008,19 @@ const en: Record<TKey, string> = {
   "tool.audioJoin.desc": "Join clips into one MP3",
   "tool.batch.title": "Batch Convert",
   "tool.batch.desc": "Process several files at once",
+
+  "tool.imageEdit.title": "Edit Image",
+  "tool.imageEdit.desc": "Resize, crop, rotate and flip",
+  "imageEdit.preview": "Edit preview",
+  "imageEdit.transform": "Rotate and flip",
+  "imageEdit.crop": "Crop ratio",
+  "imageEdit.free": "Free",
+  "imageEdit.cropNote": "Cropping is centred on the image.",
+  "imageEdit.size": "Size and format",
+  "imageEdit.note":
+    "Height keeps its ratio when the width changes. Saving re-encodes the image, which also strips metadata.",
+  "imageEdit.run": "Apply Edit",
+  "imageEdit.error": "Could not render the image; this file may be unsupported.",
 
   "tool.audioSpeed.title": "Audio Speed / Level",
   "tool.audioSpeed.desc": "Adjust playback speed and volume",
