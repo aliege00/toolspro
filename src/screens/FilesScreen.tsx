@@ -146,18 +146,24 @@ export default function FilesScreen() {
   }, [entries, hidden]);
 
   const modeEntries = useMemo(() => {
-    if (mode === "hidden") return entries.filter((e) => hidden.includes(e.key));
+    // PIN yoksa gizli dosyalar hiçbir koşulda listelenmez.
+    if (mode === "hidden") {
+      if (!pinExists) return [];
+      return entries.filter((e) => hidden.includes(e.key));
+    }
     const visible = entries.filter((e) => !hidden.includes(e.key));
     if (mode === "favorites") return visible.filter((e) => favorites.includes(e.key));
     return visible;
-  }, [mode, entries, hidden, favorites]);
+  }, [mode, entries, hidden, favorites, pinExists]);
 
   const albumEntries = useMemo(() => {
     const album = albums.find((a) => a.id === albumOpen);
     if (!album) return [];
     const byKey = new Map(entries.map((e) => [e.key, e]));
-    return album.keys.map((k) => byKey.get(k)).filter((e): e is Entry => !!e);
-  }, [albumOpen, albums, entries]);
+    return album.keys
+      .map((k) => byKey.get(k))
+      .filter((e): e is Entry => !!e && !hidden.includes(e.key));
+  }, [albumOpen, albums, entries, hidden]);
 
   const visible = useMemo(() => {
     const source = albumOpen ? albumEntries : modeEntries;
@@ -636,11 +642,23 @@ export default function FilesScreen() {
               </Button>
             </EmptyState>
           ) : mode === "hidden" ? (
-            <EmptyState
-              icon={<LockIcon size={30} />}
-              title={t("files.hiddenEmpty")}
-              description={t("files.moveToTrashHint")}
-            />
+            pinExists ? (
+              <EmptyState
+                icon={<LockIcon size={30} />}
+                title={t("files.hiddenEmpty")}
+                description={t("files.moveToTrashHint")}
+              />
+            ) : (
+              <EmptyState
+                icon={<LockIcon size={30} />}
+                title={t("files.pinNeeded")}
+                description={t("files.pinSettings")}
+              >
+                <Button full onClick={() => push({ name: "settings" })}>
+                  {t("settings.title")}
+                </Button>
+              </EmptyState>
+            )
           ) : (
             <EmptyState
               icon={<FolderIcon size={30} />}
@@ -851,20 +869,6 @@ export default function FilesScreen() {
         )}
       </AnimatePresence>
 
-      {!pinExists && mode === "hidden" && (
-        <div className="mt-4">
-          <EmptyState
-            icon={<LockIcon size={30} />}
-            title={t("files.pinNeeded")}
-            description={t("files.pinSettings")}
-          >
-            <Button full onClick={() => push({ name: "settings" })}>
-              {t("settings.title")}
-            </Button>
-          </EmptyState>
-        </div>
-      )}
-
       {/* ---------- Duplicates ---------- */}
       <DuplicatesSheet
         open={dupSheet}
@@ -1000,6 +1004,10 @@ function DuplicatesSheet({
       done += 1;
       setScanned(done);
       setProgress(done / Math.max(1, targets.length));
+    }
+    if (cancelRef.current) {
+      cancelRef.current = false;
+      return;
     }
     const result = [...map.entries()]
       .filter(([, list]) => list.length > 1)

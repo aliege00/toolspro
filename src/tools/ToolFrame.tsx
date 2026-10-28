@@ -24,11 +24,13 @@ export function useToolFile(initialFileId?: string, accept?: string) {
   const { byId } = useLibrary();
   const [picked, setPicked] = useState<PickedFile | null>(null);
   const createdUrl = useRef<string | null>(null);
+  const appliedInitial = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!initialFileId) return;
+    if (!initialFileId || appliedInitial.current === initialFileId) return;
     const entry = byId(initialFileId);
     if (entry) {
+      appliedInitial.current = initialFileId;
       setPicked({ file: entry.file, url: entry.url, fromLibraryId: entry.id });
     }
   }, [initialFileId, byId]);

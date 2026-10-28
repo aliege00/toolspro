@@ -878,23 +878,23 @@ function EditorWorkspace({
   );
 
   const addText = useCallback(() => {
-    const track = project.tracks.find((item) => item.kind === "text") ?? null;
-    if (!track) {
-      addTrack("text");
-      return;
-    }
     const duration = 3;
+    const track =
+      projectRef.current.tracks.find((item) => item.kind === "text") ??
+      createTrack("text", 1);
     const start = freeStart(track, playheadRef.current, duration);
     const clip = textClip(start, duration);
     commit((draft) => {
-      const target = draft.tracks.find((item) => item.kind === "text");
-      if (target) {
-        target.clips.push(clip);
-        target.clips = sortedClips(target);
+      let target = draft.tracks.find((item) => item.kind === "text");
+      if (!target) {
+        target = createTrack("text", 1);
+        draft.tracks.push(target);
       }
+      target.clips.push(clip);
+      target.clips = sortedClips(target);
     });
     setSelectedId(clip.id);
-  }, [addTrack, commit, project.tracks]);
+  }, [commit]);
 
   const togglePlay = useCallback(() => {
     if (playing) {

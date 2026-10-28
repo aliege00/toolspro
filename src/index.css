@@ -121,6 +121,3 @@ button {
   accent-color: var(--tint);
 }
 
-video::-webkit-media-controls {
-  display: none !important;
-}

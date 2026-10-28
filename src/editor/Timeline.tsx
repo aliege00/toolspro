@@ -174,6 +174,7 @@ export default function Timeline({
     mode: DragState["mode"],
   ) => {
     if (event.button !== undefined && event.button !== 0) return;
+    if (pointers.current.size >= 2) return;
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     onSelect(clip.id, track.id);
@@ -277,7 +278,7 @@ export default function Timeline({
         <div
           ref={scrollRef}
           className="no-scrollbar relative flex-1 overflow-x-auto overscroll-x-contain"
-          onPointerDown={handlePinchDown}
+          onPointerDownCapture={handlePinchDown}
           onPointerMove={handlePinchMove}
           onPointerUp={handlePinchUp}
           onPointerCancel={handlePinchUp}

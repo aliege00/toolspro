@@ -283,9 +283,12 @@ export default function Preview({
 
   useEffect(() => {
     const element = videoRef.current;
-    if (!element || playing || !active || active.kind !== "video") return;
+    if (!element || !active || active.kind !== "video") return;
+    if (!playing && active.freezeAt === undefined) return;
     const target = active.freezeAt ?? sourceTime(active, playhead);
-    if (Number.isFinite(target) && Math.abs(element.currentTime - target) > 0.25) {
+    // Oynarken her karede arama yapmayız; yalnızca zaman çizelgesinde
+    // belirgin bir atlama (veya sürükleyerek arama) olduğunda düzeltiriz.
+    if (Number.isFinite(target) && Math.abs(element.currentTime - target) > 0.7) {
       try {
         element.currentTime = Math.max(0, target);
       } catch {

@@ -91,6 +91,9 @@ export default function VoiceRecorder() {
       setElapsed(0);
       timerRef.current = window.setInterval(() => setElapsed((e) => e + 1), 1000);
     } catch {
+      // Kayıt başlatılamadıysa mikrofon akışını açık bırakma.
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
       setError(t("recorder.error"));
       setRecording(false);
     }

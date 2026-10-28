@@ -171,8 +171,10 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
 
   useEffect(() => {
     const video = videoRef.current;
-    if (video) video.playbackRate = speed;
-  }, [speed, current?.id]);
+    if (!video) return;
+    video.playbackRate = speed;
+    video.volume = volume;
+  }, [speed, volume, current?.id]);
 
   // Zaman + altyazı aktualizasyonu
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
 import { Button, Segmented } from "@/components/ui";
@@ -30,6 +30,7 @@ export default function QrTool() {
     rafRef.current = undefined;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
     setCameraOn(false);
   };
 
@@ -90,6 +91,8 @@ export default function QrTool() {
         audio: false,
       });
       streamRef.current = stream;
+      // Video öğesi cameraOn'dan bağımsız olarak bağlı kalır; aksi hâlde
+      // ilk açılışta ref henüz yokken kamera başlatılamıyordu.
       const video = videoRef.current;
       if (!video) throw new Error("video");
       video.srcObject = stream;
@@ -173,32 +176,30 @@ export default function QrTool() {
               {t("qr.camera")}
             </Button>
 
-            <AnimatePresence>
-              {cameraOn && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="relative overflow-hidden rounded-[14px] bg-black">
-                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-                    <video
-                      ref={videoRef}
-                      playsInline
-                      muted
-                      className="aspect-square w-full object-cover"
-                    />
-                    <span className="absolute inset-x-0 top-2 text-center text-[12.5px] text-white/85">
-                      {t("qr.cameraScanning")}
-                    </span>
-                  </div>
-                  <Button full variant="ghost" size="md" onClick={stopCamera}>
-                    {t("qr.stopCamera")}
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <div
+              aria-hidden={!cameraOn}
+              className={
+                cameraOn
+                  ? "overflow-hidden"
+                  : "pointer-events-none fixed top-0 -left-[9999px] h-px w-px overflow-hidden opacity-0"
+              }
+            >
+              <div className="relative overflow-hidden rounded-[14px] bg-black">
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted
+                  className="aspect-square w-full object-cover"
+                />
+                <span className="absolute inset-x-0 top-2 text-center text-[12.5px] text-white/85">
+                  {t("qr.cameraScanning")}
+                </span>
+              </div>
+              <Button full variant="ghost" size="md" onClick={stopCamera}>
+                {t("qr.stopCamera")}
+              </Button>
+            </div>
 
             {scanError && <p className="text-[13px] text-danger">{scanError}</p>}
           </div>

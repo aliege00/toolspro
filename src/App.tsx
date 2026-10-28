@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
+import { Capacitor } from "@capacitor/core";
+import type { PluginListenerHandle } from "@capacitor/core";
+import { App as CapacitorApp } from "@capacitor/app";
 import { LaunchScreen } from "@/components/Brand";
 import { AudioMiniPlayer, AudioPlayerSheet } from "@/components/AudioPlayer";
 import { AudioProvider, useAudioActive } from "@/lib/audio";
@@ -45,8 +48,26 @@ function routeKey(route: Route, depth: number): string {
 }
 
 function Shell() {
-  const { current, stack, direction } = useNav();
+  const { current, stack, direction, pop } = useNav();
   const audioActive = useAudioActive();
+
+  // Android donanım geri tuşu: önce uygulama içinde geri git, ana sayfada çık.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let disposed = false;
+    let handle: PluginListenerHandle | undefined;
+    void CapacitorApp.addListener("backButton", () => {
+      if (stack.length > 1) pop();
+      else void CapacitorApp.exitApp();
+    }).then((listener) => {
+      if (disposed) void listener.remove();
+      else handle = listener;
+    });
+    return () => {
+      disposed = true;
+      void handle?.remove();
+    };
+  }, [stack.length, pop]);
 
   return (
     <div className="relative h-full overflow-hidden bg-bg">

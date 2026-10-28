@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Button, Segmented } from "@/components/ui";
 import { OutputCard, RunArea, ToolSection, useRunner } from "./ToolFrame";
@@ -35,6 +35,14 @@ export default function OcrTool() {
   const { status, progress, error, result: output, run } = useRunner();
 
   const offline = lang === "tur" || lang === "eng";
+  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+
+  useEffect(
+    () => () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    },
+    [previewUrl],
+  );
 
   useEffect(() => {
     setText(null);
@@ -116,9 +124,9 @@ export default function OcrTool() {
           onClick={() => void chooseFile()}
           className="flex w-full items-center gap-3 rounded-[14px] border border-dashed border-line px-4 py-4 text-left active:bg-fill"
         >
-          {file ? (
+          {file && previewUrl ? (
             <img
-              src={URL.createObjectURL(file)}
+              src={previewUrl}
               alt=""
               className="h-14 w-14 shrink-0 rounded-[10px] object-cover"
             />
