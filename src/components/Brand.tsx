@@ -1,9 +1,8 @@
-import { useId } from "react";
 import { motion } from "framer-motion";
 
 /**
- * Mat, iOS tarzı uygulama işareti: koyu grafit karo + fildişi play glifi.
- * Neon yok; yalnızca yumuşak gradyan ve ince kenar.
+ * Mat, iOS tarzı uygulama işareti: düz koyu grafit karo + fildişi play glifi.
+ * Gradyan, parıltı ve renkli gölge yok.
  */
 export function BeyToolMark({
   size = 40,
@@ -14,7 +13,6 @@ export function BeyToolMark({
   radius?: number;
   className?: string;
 }) {
-  const id = useId();
   const r = radius ?? size * 0.235;
   return (
     <svg
@@ -24,37 +22,19 @@ export function BeyToolMark({
       className={className}
       aria-hidden="true"
     >
-      <defs>
-        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#2D2D30" />
-          <stop offset="1" stopColor="#19191C" />
-        </linearGradient>
-        <linearGradient id={`${id}-glyph`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#F2EFE8" />
-          <stop offset="1" stopColor="#E4E0D7" />
-        </linearGradient>
-      </defs>
       <rect
         x="1"
         y="1"
         width="98"
         height="98"
         rx={(r / size) * 100}
-        fill={`url(#${id}-bg)`}
+        fill="#242427"
         stroke="rgba(255,255,255,0.08)"
         strokeWidth="0.8"
       />
-      <rect
-        x="9"
-        y="6"
-        width="82"
-        height="44"
-        rx={(r / size) * 72}
-        fill="rgba(255,255,255,0.028)"
-      />
       <path
         d="M40.2 30.6c0-1.9 2.1-3.1 3.8-2.1l18.7 11.9c1.6 1 1.6 3.3 0 4.3L44 56.6c-1.7 1-3.8-.2-3.8-2.1z"
-        fill={`url(#${id}-glyph)`}
+        fill="#F2EFE8"
       />
     </svg>
   );

@@ -143,8 +143,7 @@ function sdTriangle(px, py, ax, ay, bx, by, cx, cy) {
   return -Math.sqrt(d[0]) * Math.sign(d[1]);
 }
 
-const GRAPHITE_TOP = [0.176, 0.176, 0.184];
-const GRAPHITE_BOTTOM = [0.102, 0.102, 0.110];
+const GRAPHITE = [0.141, 0.141, 0.153];
 const IVORY = [0.937, 0.925, 0.898];
 
 /** Koyu mat karo + fildişi play glifi. */
@@ -163,22 +162,7 @@ function drawMark(raster, cx, cy, size, glyphRatio = 0.46, shadow = false) {
 
   raster.fill(
     (x, y) => sdRoundedRect(x, y, cx, cy, hw, hw, radius),
-    (_x, y) => {
-      const t = clamp01((y - (cy - hw)) / (2 * hw));
-      const r = GRAPHITE_TOP[0] + (GRAPHITE_BOTTOM[0] - GRAPHITE_TOP[0]) * t;
-      const g = GRAPHITE_TOP[1] + (GRAPHITE_BOTTOM[1] - GRAPHITE_TOP[1]) * t;
-      const b = GRAPHITE_TOP[2] + (GRAPHITE_BOTTOM[2] - GRAPHITE_TOP[2]) * t;
-      return [r, g, b, 1];
-    },
-  );
-
-  // Mat yüzeyde çok hafif üst ışığı (parlaklık değil, derinlik).
-  raster.fill(
-    (x, y) => sdRoundedRect(x, y, cx, cy - hw * 0.18, hw * 0.94, hw * 0.54, radius * 0.8),
-    (_x, y) => {
-      const t = clamp01((y - (cy - hw)) / (hw * 1.4));
-      return [1, 1, 1, 0.028 * (1 - t)];
-    },
+    () => [GRAPHITE[0], GRAPHITE[1], GRAPHITE[2], 1],
   );
 
   // Kenar çizgisi: koyu zeminde karoyu ayırır.
@@ -210,22 +194,6 @@ function solidCanvas(width, height, color) {
   return raster;
 }
 
-function gradientCanvas(width, height, top, bottom) {
-  const raster = new Raster(width, height);
-  raster.fill(
-    () => -1,
-    (_x, y) => {
-      const t = clamp01(y / Math.max(1, height - 1));
-      return [
-        top[0] + (bottom[0] - top[0]) * t,
-        top[1] + (bottom[1] - top[1]) * t,
-        top[2] + (bottom[2] - top[2]) * t,
-        1,
-      ];
-    },
-  );
-  return raster;
-}
 
 /* ----------------------------- Çıktılar ----------------------------- */
 
@@ -240,15 +208,7 @@ function iconLegacy(size) {
   const radius = size * 0.225;
   raster.fill(
     (x, y) => sdRoundedRect(x, y, size / 2, size / 2, size / 2 - inset, size / 2 - inset, radius),
-    (_x, y) => {
-      const t = clamp01(y / size);
-      return [
-        GRAPHITE_TOP[0] + (GRAPHITE_BOTTOM[0] - GRAPHITE_TOP[0]) * t,
-        GRAPHITE_TOP[1] + (GRAPHITE_BOTTOM[1] - GRAPHITE_TOP[1]) * t,
-        GRAPHITE_TOP[2] + (GRAPHITE_BOTTOM[2] - GRAPHITE_TOP[2]) * t,
-        1,
-      ];
-    },
+    () => [GRAPHITE[0], GRAPHITE[1], GRAPHITE[2], 1],
   );
   const gw = size * 0.42;
   const gh = gw * 1.16;
@@ -276,20 +236,10 @@ function adaptiveForeground(size) {
 
 function splash(width, height, mode) {
   const light = mode === "light";
+  // Düz mat zemin: gradyan ve vinyet yok.
   const raster = light
-    ? gradientCanvas(width, height, [0.956, 0.956, 0.968], [0.918, 0.918, 0.933])
-    : gradientCanvas(width, height, [0.063, 0.063, 0.070], [0.035, 0.035, 0.040]);
-
-  // Hafif mat vinyet; neon yok.
-  raster.fill(
-    () => -1,
-    (x, y) => {
-      const nx = (x - width / 2) / (width / 2);
-      const ny = (y - height / 2) / (height / 2);
-      const d = Math.min(1, Math.hypot(nx, ny) / 1.4);
-      return [light ? 0.35 : 0, light ? 0.35 : 0, light ? 0.38 : 0, light ? 0.05 * d : 0.12 * d];
-    },
-  );
+    ? solidCanvas(width, height, () => [0.937, 0.937, 0.949, 1])
+    : solidCanvas(width, height, () => [0.051, 0.051, 0.059, 1]);
 
   const size = Math.min(width, height) * 0.28;
   drawMark(raster, width / 2, height / 2 - size * 0.04, size, 0.44, true);
