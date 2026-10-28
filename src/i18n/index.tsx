@@ -462,6 +462,21 @@ const tr = {
   "tool.batch.title": "Toplu Dönüştür",
   "tool.batch.desc": "Birden çok dosyayı tek seferde işle",
 
+  "tool.zipExtract.title": "ZIP Aç",
+  "tool.zipExtract.desc": "Arşivi kitaplığa çıkar",
+  "zipExtract.pick": "ZIP Dosyası Seç",
+  "zipExtract.accept": ".zip arşivi",
+  "zipExtract.note":
+    "Arşivdeki dosyalar kitaplığa çıkarılır; klasör yapısı düzleştirilir. En fazla 500 dosya ve 500 MB açılır.",
+  "zipExtract.run": "Arşivi Aç",
+  "zipExtract.done": "{n} dosya kitaplığa eklendi",
+  "zipExtract.openFiles": "Dosyalar'da Aç",
+  "zipExtract.invalid": "Arşiv okunamadı; dosya bozuk olabilir.",
+  "zipExtract.empty": "Arşivde dosya bulunamadı.",
+  "zipExtract.tooBig": "Arşiv çok büyük; en fazla 500 MB açılabilir.",
+  "zipExtract.tooMany": "Arşivde {n} dosyadan fazla var.",
+  "zipExtract.unsupported": "Arşivde desteklenmeyen bir sıkıştırma yöntemi var.",
+
   "tool.scanner.title": "Belge Tarayıcı",
   "tool.scanner.desc": "Kamerayla çek, PDF yap",
   "scanner.camera": "Kamera",
@@ -1058,6 +1073,21 @@ const en: Record<TKey, string> = {
   "tool.audioJoin.desc": "Join clips into one MP3",
   "tool.batch.title": "Batch Convert",
   "tool.batch.desc": "Process several files at once",
+
+  "tool.zipExtract.title": "Extract ZIP",
+  "tool.zipExtract.desc": "Unpack an archive into the library",
+  "zipExtract.pick": "Choose ZIP File",
+  "zipExtract.accept": ".zip archive",
+  "zipExtract.note":
+    "Files in the archive are extracted into the library; folder structure is flattened. Up to 500 files and 500 MB are extracted.",
+  "zipExtract.run": "Extract",
+  "zipExtract.done": "{n} files added to the library",
+  "zipExtract.openFiles": "Open in Files",
+  "zipExtract.invalid": "Could not read the archive; the file may be corrupt.",
+  "zipExtract.empty": "No files were found in the archive.",
+  "zipExtract.tooBig": "The archive is too large; up to 500 MB can be extracted.",
+  "zipExtract.tooMany": "The archive contains more than {n} files.",
+  "zipExtract.unsupported": "The archive uses an unsupported compression method.",
 
   "tool.scanner.title": "Document Scanner",
   "tool.scanner.desc": "Capture with the camera and make a PDF",

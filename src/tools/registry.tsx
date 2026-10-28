@@ -40,6 +40,7 @@ import ImageConvert from "./ImageConvert";
 import ImageEdit from "./ImageEdit";
 import ImageMetadata from "./ImageMetadata";
 import ZipTool from "./ZipTool";
+import ZipExtract from "./ZipExtract";
 import HashTool from "./HashTool";
 import VideoInfo from "./VideoInfo";
 import FrameCapture from "./FrameCapture";
@@ -285,6 +286,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.zip.desc",
     icon: <ArchiveIcon size={24} />,
     component: ZipTool,
+  },
+  {
+    id: "zip-extract",
+    titleKey: "tool.zipExtract.title",
+    descKey: "tool.zipExtract.desc",
+    icon: <ArchiveIcon size={24} />,
+    component: ZipExtract,
   },
   {
     id: "rename",
