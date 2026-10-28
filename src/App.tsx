@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { Capacitor } from "@capacitor/core";
 import type { PluginListenerHandle } from "@capacitor/core";
@@ -14,6 +14,7 @@ import { installGlobalErrorLogging } from "@/lib/errorLog";
 import { OutputsProvider } from "@/lib/outputs";
 import { PacksProvider } from "@/packs/PacksProvider";
 import { NavProvider, useNav } from "@/lib/nav";
+import { runBackHandler } from "@/lib/back";
 import type { Route } from "@/lib/nav";
 import Onboarding from "@/screens/Onboarding";
 import Home from "@/screens/Home";
@@ -53,13 +54,17 @@ function Shell() {
   const { current, stack, direction, pop } = useNav();
   const audioActive = useAudioActive();
 
-  // Android donanım geri tuşu: önce uygulama içinde geri git, ana sayfada çık.
+  // Android donanım geri tuşu: önce açık katmanı kapat, sonra bir önceki ekrana
+  // dön; ana sayfadayken uygulamadan çık.
+  const depth = useRef(stack.length);
+  depth.current = stack.length;
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     let disposed = false;
     let handle: PluginListenerHandle | undefined;
     void CapacitorApp.addListener("backButton", () => {
-      if (stack.length > 1) pop();
+      if (runBackHandler()) return;
+      if (depth.current > 1) pop();
       else void CapacitorApp.exitApp();
     }).then((listener) => {
       if (disposed) void listener.remove();
@@ -69,7 +74,7 @@ function Shell() {
       disposed = true;
       void handle?.remove();
     };
-  }, [stack.length, pop]);
+  }, [pop]);
 
   return (
     <div className="relative h-full overflow-hidden bg-bg">

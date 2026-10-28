@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { ChevronLeft } from "./Icons";
 import { useT } from "@/i18n";
+import { useBackHandler } from "@/lib/back";
 
 type ButtonVariant = "primary" | "secondary" | "gray" | "danger" | "ghost";
 type ButtonSize = "lg" | "md" | "sm";
@@ -263,6 +264,10 @@ export function Sheet({
   children: ReactNode;
 }) {
   const t = useT();
+  useBackHandler(open, () => {
+    onClose();
+    return true;
+  });
   return (
     <AnimatePresence>
       {open && (

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useT } from "@/i18n";
+import { useBackHandler } from "@/lib/back";
 import { XMark } from "./Icons";
 
 export default function PinPad({
@@ -16,6 +17,10 @@ export default function PinPad({
 }) {
   const t = useT();
   const [pin, setPin] = useState("");
+  useBackHandler(true, () => {
+    onCancel();
+    return true;
+  });
 
   const press = (digit: string) => {
     if (pin.length >= 4) return;
