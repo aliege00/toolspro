@@ -20,12 +20,14 @@ import {
   WaveformIcon,
   BatchIcon,
   GaugeIcon,
+  VolumeIcon,
 } from "@/components/Icons";
 import VideoToMp3 from "./VideoToMp3";
 import VideoTrim from "./VideoTrim";
 import VideoJoin from "./VideoJoin";
 import VideoCompress from "./VideoCompress";
 import VideoRotate from "./VideoRotate";
+import VideoMute from "./VideoMute";
 import OcrTool from "./OcrTool";
 import AudioTrim from "./AudioTrim";
 import AudioJoin from "./AudioJoin";
@@ -78,6 +80,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.videoJoin.desc",
     icon: <LayersIcon size={24} />,
     component: VideoJoin,
+  },
+  {
+    id: "video-mute",
+    titleKey: "tool.videoMute.title",
+    descKey: "tool.videoMute.desc",
+    icon: <VolumeIcon size={24} />,
+    component: VideoMute,
   },
   {
     id: "video-compress",

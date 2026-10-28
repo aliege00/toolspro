@@ -457,6 +457,13 @@ const tr = {
   "tool.batch.title": "Toplu Dönüştür",
   "tool.batch.desc": "Birden çok dosyayı tek seferde işle",
 
+  "tool.videoMute.title": "Sesi Kaldır",
+  "tool.videoMute.desc": "Videonun sesini tamamen kaldır",
+  "videoMute.note":
+    "Video yeniden kodlanmadan ses izi çıkarılır; desteklenmeyen kaplarda video yeniden kodlanır.",
+  "videoMute.run": "Sesi Kaldır",
+  "videoMute.error": "Ses kaldırılamadı; video codec'i desteklenmiyor olabilir.",
+
   "videoRotate.rotation": "Döndürme",
   "videoRotate.flipH": "Yatay çevir",
   "videoRotate.flipV": "Dikey çevir",
@@ -936,6 +943,13 @@ const en: Record<TKey, string> = {
   "tool.audioJoin.desc": "Join clips into one MP3",
   "tool.batch.title": "Batch Convert",
   "tool.batch.desc": "Process several files at once",
+
+  "tool.videoMute.title": "Remove Audio",
+  "tool.videoMute.desc": "Strip the audio track from a video",
+  "videoMute.note":
+    "The audio track is removed without re-encoding; unsupported containers fall back to re-encoding.",
+  "videoMute.run": "Remove Audio",
+  "videoMute.error": "Could not remove the audio; this video codec may be unsupported.",
 
   "videoRotate.rotation": "Rotation",
   "videoRotate.flipH": "Flip horizontally",
