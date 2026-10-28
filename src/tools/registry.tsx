@@ -21,6 +21,7 @@ import {
   BatchIcon,
   GaugeIcon,
   VolumeIcon,
+  SortIcon,
 } from "@/components/Icons";
 import VideoToMp3 from "./VideoToMp3";
 import VideoTrim from "./VideoTrim";
@@ -47,6 +48,7 @@ import QrTool from "./QrTool";
 import ImageToPdf from "./ImageToPdf";
 import PdfMerge from "./PdfMerge";
 import PdfSplit from "./PdfSplit";
+import PdfOrganize from "./PdfOrganize";
 import RenameTool from "./RenameTool";
 import VoiceRecorder from "./VoiceRecorder";
 import VideoSpeed from "./VideoSpeed";
@@ -246,6 +248,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.pdfMerge.desc",
     icon: <AlbumIcon size={24} />,
     component: PdfMerge,
+  },
+  {
+    id: "pdf-organize",
+    titleKey: "tool.pdfOrganize.title",
+    descKey: "tool.pdfOrganize.desc",
+    icon: <SortIcon size={24} />,
+    component: PdfOrganize,
   },
   {
     id: "pdf-split",

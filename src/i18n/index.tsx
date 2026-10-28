@@ -462,6 +462,17 @@ const tr = {
   "tool.batch.title": "Toplu Dönüştür",
   "tool.batch.desc": "Birden çok dosyayı tek seferde işle",
 
+  "tool.pdfOrganize.title": "PDF Sayfaları",
+  "tool.pdfOrganize.desc": "Sayfa sil ve sırala",
+  "pdfOrganize.kept": "{n} sayfa korunuyor",
+  "pdfOrganize.order": "Sayfa sırası",
+  "pdfOrganize.position": "{n}. sırada",
+  "pdfOrganize.delete": "Sayfayı sil",
+  "pdfOrganize.reset": "Sırayı sıfırla",
+  "pdfOrganize.note":
+    "Sayfaları oklarla sırala veya kaldır. Asıl PDF değişmez; yeni bir kopya oluşturulur.",
+  "pdfOrganize.run": "Yeni PDF Oluştur",
+
   "tool.imageMetadata.title": "Meta Veri Sil",
   "tool.imageMetadata.desc": "EXIF ve konum bilgisini kaldır",
   "imageMetadata.note":
@@ -1016,6 +1027,17 @@ const en: Record<TKey, string> = {
   "tool.audioJoin.desc": "Join clips into one MP3",
   "tool.batch.title": "Batch Convert",
   "tool.batch.desc": "Process several files at once",
+
+  "tool.pdfOrganize.title": "PDF Pages",
+  "tool.pdfOrganize.desc": "Delete and reorder pages",
+  "pdfOrganize.kept": "{n} pages kept",
+  "pdfOrganize.order": "Page order",
+  "pdfOrganize.position": "Position {n}",
+  "pdfOrganize.delete": "Delete page",
+  "pdfOrganize.reset": "Reset order",
+  "pdfOrganize.note":
+    "Reorder pages with the arrows or remove them. The original PDF is untouched; a new copy is created.",
+  "pdfOrganize.run": "Create PDF",
 
   "tool.imageMetadata.title": "Strip Metadata",
   "tool.imageMetadata.desc": "Remove EXIF and location data",
