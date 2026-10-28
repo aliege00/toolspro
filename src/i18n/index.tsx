@@ -457,6 +457,22 @@ const tr = {
   "tool.batch.title": "Toplu Dönüştür",
   "tool.batch.desc": "Birden çok dosyayı tek seferde işle",
 
+  "tool.videoWatermark.title": "Filigran / Metin",
+  "tool.videoWatermark.desc": "Videoya metin filigranı ekle",
+  "videoWatermark.text": "Metin",
+  "videoWatermark.placeholder": "Filigran metni (en fazla 80 karakter)",
+  "videoWatermark.size": "Yazı boyutu",
+  "videoWatermark.opacity": "Saydamlık",
+  "videoWatermark.appearance": "Görünüm",
+  "videoWatermark.white": "Beyaz",
+  "videoWatermark.black": "Siyah",
+  "videoWatermark.center": "Orta",
+  "videoWatermark.note":
+    "Metin videoya gömülür; yazı tipi DejaVu Sans'tır. Konumlar video kenarına göre sabittir.",
+  "videoWatermark.run": "Filigranı Uygula",
+  "videoWatermark.error": "Filigran eklenemedi; video codec'i desteklenmiyor olabilir.",
+  "videoWatermark.fontError": "Filigran yazı tipi yüklenemedi.",
+
   "tool.videoMute.title": "Sesi Kaldır",
   "tool.videoMute.desc": "Videonun sesini tamamen kaldır",
   "videoMute.note":
@@ -943,6 +959,22 @@ const en: Record<TKey, string> = {
   "tool.audioJoin.desc": "Join clips into one MP3",
   "tool.batch.title": "Batch Convert",
   "tool.batch.desc": "Process several files at once",
+
+  "tool.videoWatermark.title": "Watermark / Text",
+  "tool.videoWatermark.desc": "Burn a text watermark onto a video",
+  "videoWatermark.text": "Text",
+  "videoWatermark.placeholder": "Watermark text (up to 80 characters)",
+  "videoWatermark.size": "Font size",
+  "videoWatermark.opacity": "Opacity",
+  "videoWatermark.appearance": "Appearance",
+  "videoWatermark.white": "White",
+  "videoWatermark.black": "Black",
+  "videoWatermark.center": "Center",
+  "videoWatermark.note":
+    "Text is burned into the video using the DejaVu Sans font. Positions are relative to the video edge.",
+  "videoWatermark.run": "Apply Watermark",
+  "videoWatermark.error": "Could not add the watermark; this video codec may be unsupported.",
+  "videoWatermark.fontError": "The watermark font could not be loaded.",
 
   "tool.videoMute.title": "Remove Audio",
   "tool.videoMute.desc": "Strip the audio track from a video",

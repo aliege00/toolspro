@@ -28,6 +28,7 @@ import VideoJoin from "./VideoJoin";
 import VideoCompress from "./VideoCompress";
 import VideoRotate from "./VideoRotate";
 import VideoMute from "./VideoMute";
+import VideoWatermark from "./VideoWatermark";
 import OcrTool from "./OcrTool";
 import AudioTrim from "./AudioTrim";
 import AudioJoin from "./AudioJoin";
@@ -101,6 +102,13 @@ export const tools: ToolMeta[] = [
     descKey: "tool.videoRotate.desc",
     icon: <RotateIcon size={24} />,
     component: VideoRotate,
+  },
+  {
+    id: "video-watermark",
+    titleKey: "tool.videoWatermark.title",
+    descKey: "tool.videoWatermark.desc",
+    icon: <TextIcon size={24} />,
+    component: VideoWatermark,
   },
   {
     id: "video-speed",
