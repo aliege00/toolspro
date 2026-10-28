@@ -2,11 +2,11 @@ import { useCallback, useRef, useState } from "react";
 import { Unzip, UnzipInflate } from "fflate";
 import { Button } from "@/components/ui";
 import { ArchiveIcon, FileIcon } from "@/components/Icons";
-import { formatBytes, pickFiles } from "@/lib/files";
+import { ARCHIVE_WARN_BYTES, formatBytes, pickFiles } from "@/lib/files";
 import { logError } from "@/lib/errorLog";
 import { useLibrary } from "@/lib/library";
 import { useNav } from "@/lib/nav";
-import { RunArea, ToolSection } from "./ToolFrame";
+import { RunArea, SizeWarning, ToolSection } from "./ToolFrame";
 import { useT } from "@/i18n";
 
 type Status = "idle" | "working" | "cancelled" | "done" | "error";
@@ -187,6 +187,13 @@ export default function ZipExtract() {
             </div>
           </button>
         )}
+        <div className="mt-3">
+          <SizeWarning
+            bytes={file?.size ?? 0}
+            threshold={ARCHIVE_WARN_BYTES}
+            messageKey="run.largeZip"
+          />
+        </div>
         <p className="mt-3 text-[12.5px] leading-[1.45] text-ink2">{t("zipExtract.note")}</p>
       </ToolSection>
 
