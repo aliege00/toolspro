@@ -336,3 +336,60 @@ export const tools: ToolMeta[] = [
 export function toolById(id: string): ToolMeta | undefined {
   return tools.find((t) => t.id === id);
 }
+
+export type ToolCategory = "video" | "audio" | "image" | "pdf" | "docs";
+
+/** Araç kartlarının ekranda görüneceği sıra. */
+export const CATEGORY_ORDER: ToolCategory[] = ["video", "audio", "image", "pdf", "docs"];
+
+const CATEGORY_LABEL: Record<ToolCategory, string> = {
+  video: "cat.video",
+  audio: "cat.audio",
+  image: "cat.image",
+  pdf: "cat.pdf",
+  docs: "cat.docs",
+};
+
+const CATEGORY_IDS: Record<ToolCategory, string[]> = {
+  video: [
+    "video-trim",
+    "video-join",
+    "video-mute",
+    "video-compress",
+    "video-rotate",
+    "video-watermark",
+    "video-speed",
+    "video-info",
+    "subtitle-burn",
+    "srt-edit",
+    "frame",
+    "gif",
+  ],
+  audio: ["video-to-mp3", "audio-trim", "audio-join", "audio-speed", "audio-convert", "recorder"],
+  image: ["image-compress", "image-edit", "image-metadata", "image-convert", "qr"],
+  pdf: ["image-pdf", "text-pdf", "pptx-pdf", "pdf-merge", "pdf-organize", "pdf-split", "pdf-image"],
+  docs: ["scanner", "zip", "zip-extract", "rename", "hash", "ocr", "batch"],
+};
+
+const categoryOfId = new Map<string, ToolCategory>();
+for (const category of CATEGORY_ORDER) {
+  for (const id of CATEGORY_IDS[category]) categoryOfId.set(id, category);
+}
+
+export function toolCategory(tool: ToolMeta): ToolCategory {
+  // Listeye dahil edilmeyen yeni bir araç sessizce "docs" grubuna düşer.
+  return categoryOfId.get(tool.id) ?? "docs";
+}
+
+/** Kategorisi dolu gruplar; boş gruplar arayüzde gösterilmez. */
+export function toolGroups(): {
+  category: ToolCategory;
+  labelKey: string;
+  items: ToolMeta[];
+}[] {
+  return CATEGORY_ORDER.map((category) => ({
+    category,
+    labelKey: CATEGORY_LABEL[category],
+    items: tools.filter((tool) => toolCategory(tool) === category),
+  })).filter((group) => group.items.length > 0);
+}
