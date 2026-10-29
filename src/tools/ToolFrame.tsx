@@ -210,7 +210,7 @@ export function FileField({
           className="flex items-center gap-3 rounded-[14px] bg-fill p-3"
         >
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-card text-ink2">
-            {multipleCount ? <FileIcon size={22} /> : <FileIcon size={22} />}
+            <FileIcon size={22} />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[14.5px] font-medium">

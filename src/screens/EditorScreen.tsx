@@ -332,7 +332,7 @@ function EditorWorkspace({
   const playheadRef = useRef(0);
   const [playing, setPlaying] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [saveState, setSaveState] = useState<"saving" | "saved">("saved");
+  const [saveState, setSaveState] = useState<"saving" | "saved" | "error">("saved");
   const [toast, setToast] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -385,7 +385,7 @@ function EditorWorkspace({
     setSaveState("saving");
     void saveProject(projectRef.current)
       .then(() => setSaveState("saved"))
-      .catch(() => setSaveState("saving"));
+      .catch(() => setSaveState("error"));
   }, []);
 
   useEffect(() => {
@@ -394,7 +394,7 @@ function EditorWorkspace({
     timer = window.setTimeout(() => {
       void saveProject(project)
         .then(() => setSaveState("saved"))
-        .catch(() => setSaveState("saving"));
+        .catch(() => setSaveState("error"));
     }, 650);
     return () => {
       if (timer) window.clearTimeout(timer);
@@ -1047,8 +1047,16 @@ function EditorWorkspace({
           </button>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[16px] font-semibold">{project.name}</p>
-            <p className="text-[10.5px] text-ink3">
-              {saveState === "saving" ? t("saving") : t("saved")} · {t("autoSave")}
+            <p
+              className={`text-[10.5px] ${
+                saveState === "error" ? "text-danger" : "text-ink3"
+              }`}
+            >
+              {saveState === "saving"
+                ? t("saving")
+                : saveState === "error"
+                  ? t("saveError")
+                  : t("saved")} · {t("autoSave")}
             </p>
           </div>
           <button

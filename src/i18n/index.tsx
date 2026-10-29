@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 export type Lang = "tr" | "en";
 
 const tr = {
+  "common.back": "Geri",
   "common.close": "Kapat",
   "common.copy": "Kopyala",
   "common.copied": "Kopyalandı",
@@ -118,6 +119,11 @@ const tr = {
   "tools.outputsTitle": "Çıktılar ({n})",
   "tools.offlineNote":
     "Dönüşümler cihazının işlemcisinde, internete yüklenmeden yapılır.",
+  "cat.video": "Video",
+  "cat.audio": "Ses",
+  "cat.image": "Görsel",
+  "cat.pdf": "PDF",
+  "cat.docs": "Belge ve dosya",
   "tools.notFound": "Bu araç bulunamadı.",
   "tools.localNote": "Dosyaların cihazından çıkmaz; işlem tamamen yerelde yapılır.",
 
@@ -654,6 +660,7 @@ const tr = {
 export type TKey = keyof typeof tr;
 
 const en: Record<TKey, string> = {
+  "common.back": "Back",
   "common.close": "Close",
   "common.copy": "Copy",
   "common.copied": "Copied",
@@ -768,6 +775,11 @@ const en: Record<TKey, string> = {
   "tools.outputsTitle": "Outputs ({n})",
   "tools.offlineNote":
     "Conversions run on your device's processor, without uploading anything.",
+  "cat.video": "Video",
+  "cat.audio": "Audio",
+  "cat.image": "Images",
+  "cat.pdf": "PDF",
+  "cat.docs": "Documents & files",
   "tools.notFound": "Tool not found.",
   "tools.localNote":
     "Files never leave your device; everything runs locally.",

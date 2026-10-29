@@ -29,6 +29,7 @@ import {
   XMark,
 } from "@/components/Icons";
 import { formatDate, formatBytes, pickFiles } from "@/lib/files";
+import { useBackHandler } from "@/lib/back";
 import type { Kind } from "@/lib/files";
 import type { Entry } from "@/lib/library";
 import { useLibrary } from "@/lib/library";
@@ -119,6 +120,12 @@ export default function FilesScreen() {
   const longPressed = useRef(false);
 
   const pinExists = hasPin();
+
+  // Android geri tuşu: tam ekran görsel açıkken önce görsel kapanır.
+  useBackHandler(!!lightbox, () => {
+    setLightbox(null);
+    return true;
+  });
 
   const showToast = (message: string) => {
     setToast(message);
@@ -214,17 +221,21 @@ export default function FilesScreen() {
   const open = (entry: Entry) => {
     if (entry.kind === "image") setLightbox(entry);
     else if (entry.kind === "audio") {
+      // Kuyruk normalde gizli olmayan sesleri kapsar; açılan dosya gizli
+      // klasördeyse o dosya da kuyruğa eklenir, aksi halde yanlış parça oynar.
       const tracks = entries
-        .filter((item) => item.kind === "audio" && !hidden.includes(item.key))
+        .filter(
+          (item) =>
+            item.kind === "audio" &&
+            (item.key === entry.key || !hidden.includes(item.key)),
+        )
         .map((item) => ({
           id: item.id,
           title: item.name,
           subtitle: t("audio.backgroundNote"),
           url: item.url,
         }));
-      playQueue(tracks.length > 0 ? tracks : [
-        { id: entry.id, title: entry.name, subtitle: t("audio.backgroundNote"), url: entry.url },
-      ], entry.id);
+      playQueue(tracks, entry.id);
       openPlayer();
     } else if (entry.kind === "video") push({ name: "video", fileId: entry.id });
     else setInfo(entry);

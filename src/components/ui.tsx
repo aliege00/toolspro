@@ -320,6 +320,7 @@ export function NavBar({
   right?: ReactNode;
   subtitle?: string;
 }) {
+  const t = useT();
   return (
     <header className="safe-top sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur-xl">
       <div className="flex h-[52px] items-center gap-2 px-4">
@@ -330,7 +331,7 @@ export function NavBar({
               whileTap={{ scale: 0.9 }}
               onClick={onBack}
               className="-ml-1.5 flex h-9 w-9 items-center justify-center rounded-full text-tint active:bg-fill"
-              aria-label="Geri"
+              aria-label={t("common.back")}
             >
               <ChevronLeft size={26} strokeWidth={2.2} />
             </motion.button>
