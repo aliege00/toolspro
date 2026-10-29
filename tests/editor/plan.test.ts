@@ -193,6 +193,55 @@ describe("buildExportPlan", () => {
     expect(plan.warnings.some((warning) => warning.includes("Metin"))).toBe(true);
   });
 
+  test("geçişler fade/flash/zoom zincirine girer", () => {
+    for (const [transition, token] of [
+      ["fade", "fade=t=in"],
+      ["flash", "color=white"],
+      ["zoom", "zoompan"],
+    ] as const) {
+      const plan = buildExportPlan(
+        projectWith([clip({ transitionIn: transition, transitionDuration: 0.4 })]),
+        { quality: 480 },
+        [source()],
+      );
+      expect(plan.filterComplex).toContain(token);
+    }
+  });
+
+  test("donmuş kare ve Ken Burns zinciri üretilir", () => {
+    const frozen = buildExportPlan(
+      projectWith([clip({ freezeAt: 1.5 })]),
+      { quality: 480 },
+      [source()],
+    );
+    expect(frozen.filterComplex).toContain("trim=start=1.5:duration=0.05");
+    expect(frozen.filterComplex).toContain("loop=loop=-1");
+
+    const image = buildExportPlan(
+      projectWith([clip({ kind: "image", name: "görsel", kenBurns: true })]),
+      { quality: 480 },
+      [source()],
+    );
+    expect(image.filterComplex).toContain("zoompan");
+    expect(image.args).toContain("-loop");
+  });
+
+  test("müzik izi amix ile taban sese karışır", () => {
+    const project = projectWith([clip()]);
+    project.tracks
+      .find((track) => track.kind === "audio")!
+      .clips.push({
+        ...clip({ id: "m1", kind: "audio", name: "müzik", entryId: "e2" }),
+        volume: 0.6,
+      });
+    const plan = buildExportPlan(project, { quality: 480 }, [
+      source(),
+      source({ id: "e2", fileName: "music.mp3" }),
+    ]);
+    expect(plan.filterComplex).toContain("amix=inputs=2");
+    expect(plan.args).toContain("music.mp3");
+  });
+
   test("üretilen komut gerçek FFmpeg ile sentetik videoda çalışır", () => {
     const ffmpeg = Bun.which("ffmpeg");
     if (!ffmpeg) {
@@ -232,6 +281,7 @@ describe("buildExportPlan", () => {
       { quality: 480, aspect: "16:9" },
       [source({ fileName: "src.mp4" })],
     );
+    expect(plan.mode).toBe("single");
     const run = Bun.spawnSync([ffmpeg, ...plan.args], { cwd: dir });
     if (run.exitCode !== 0) console.error(new TextDecoder().decode(run.stderr));
     expect(run.exitCode).toBe(0);
