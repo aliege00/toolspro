@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import { Button, NavBar, Sheet } from "@/components/ui";
 import {
   ChevronLeft,
+  DuplicateIcon,
   EditorIcon,
   Play,
   PlusIcon,
+  RenameIcon,
   ScissorsIcon,
   TextIcon,
   TrashBinIcon,
@@ -15,7 +19,13 @@ import { useLibrary } from "@/lib/library";
 import { useNav } from "@/lib/nav";
 import { requestMicAccess } from "@/lib/native";
 import { useEditorT } from "@/editor/labels";
-import { deleteProject, listProjects, saveProject } from "@/editor/projectStore";
+import {
+  deleteProject,
+  duplicateProject,
+  listProjects,
+  renamedProject,
+  saveProject,
+} from "@/editor/projectStore";
 import Preview from "@/editor/Preview";
 import Timeline from "@/editor/Timeline";
 import Inspector from "@/editor/Inspector";
@@ -25,6 +35,7 @@ import { readPackAssetBlob } from "@/packs/install";
 import type { PackMusicItem, PackStickerItem } from "@/packs/types";
 import { clamp, clipFromEntry, clipEnd, createProject, createTrack, freeStart, projectDuration, sortedClips, textClip } from "@/editor/types";
 import type { Clip, Project, TrackKind } from "@/editor/types";
+import { History, snapshotCommand } from "@/editor/core/history";
 
 function clipCount(project: Project): number {
   return project.tracks.reduce((count, track) => count + track.clips.length, 0);
@@ -51,6 +62,8 @@ export default function EditorScreen() {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameName, setRenameName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -83,6 +96,31 @@ export default function EditorScreen() {
       await deleteProject(id);
       setProjects((current) => (current ?? []).filter((project) => project.id !== id));
       setConfirmId(null);
+    } catch {
+      setError(t("error"));
+    }
+  };
+
+  const duplicate = async (project: Project) => {
+    try {
+      const copy = duplicateProject(project, `${project.name} ${t("copySuffix")}`);
+      await saveProject(copy);
+      setProjects((current) => [copy, ...(current ?? [])]);
+    } catch {
+      setError(t("error"));
+    }
+  };
+
+  const rename = async () => {
+    const project = projects?.find((item) => item.id === renameId);
+    if (!project) return;
+    try {
+      const next = renamedProject(project, renameName);
+      await saveProject(next);
+      setProjects((current) =>
+        (current ?? []).map((item) => (item.id === next.id ? next : item)),
+      );
+      setRenameId(null);
     } catch {
       setError(t("error"));
     }
@@ -177,24 +215,45 @@ export default function EditorScreen() {
                     </span>
                   </button>
 
-                  {confirmId === project.id ? (
+                  <div className="flex shrink-0 items-center">
                     <button
                       type="button"
-                      onClick={() => void remove(project.id)}
-                      className="shrink-0 rounded-[9px] bg-fill px-2.5 py-2 text-[11.5px] font-medium text-danger"
+                      onClick={() => void duplicate(project)}
+                      className="flex h-9 w-8 items-center justify-center rounded-full text-ink3 active:bg-fill"
+                      aria-label={t("duplicate")}
                     >
-                      {t("deleteProjectConfirm")}
+                      <DuplicateIcon size={16} />
                     </button>
-                  ) : (
                     <button
                       type="button"
-                      onClick={() => setConfirmId(project.id)}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink3 active:bg-fill"
-                      aria-label={t("deleteProject")}
+                      onClick={() => {
+                        setRenameId(project.id);
+                        setRenameName(project.name);
+                      }}
+                      className="flex h-9 w-8 items-center justify-center rounded-full text-ink3 active:bg-fill"
+                      aria-label={t("renameProject")}
                     >
-                      <TrashBinIcon size={17} />
+                      <RenameIcon size={16} />
                     </button>
-                  )}
+                    {confirmId === project.id ? (
+                      <button
+                        type="button"
+                        onClick={() => void remove(project.id)}
+                        className="shrink-0 rounded-[9px] bg-fill px-2.5 py-2 text-[11.5px] font-medium text-danger"
+                      >
+                        {t("deleteProjectConfirm")}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmId(project.id)}
+                        className="flex h-9 w-8 shrink-0 items-center justify-center rounded-full text-ink3 active:bg-fill"
+                        aria-label={t("deleteProject")}
+                      >
+                        <TrashBinIcon size={17} />
+                      </button>
+                    )}
+                  </div>
                 </motion.div>
               );
             })}
@@ -230,6 +289,25 @@ export default function EditorScreen() {
           </Button>
         </div>
       </Sheet>
+
+      <Sheet
+        open={!!renameId}
+        onClose={() => setRenameId(null)}
+        title={t("renameProject")}
+      >
+        <div className="space-y-3">
+          <input
+            autoFocus
+            value={renameName}
+            onChange={(event) => setRenameName(event.target.value)}
+            placeholder={t("projectName")}
+            className="h-12 w-full rounded-[12px] bg-fill px-4 text-[16px] outline-none placeholder:text-ink3"
+          />
+          <Button full onClick={() => void rename()} disabled={!renameName.trim()}>
+            {t("save")}
+          </Button>
+        </div>
+      </Sheet>
     </div>
   );
 }
@@ -246,8 +324,9 @@ function EditorWorkspace({
   const [project, setProject] = useState<Project>(initial);
   const projectRef = useRef(project);
   projectRef.current = project;
-  const [past, setPast] = useState<Project[]>([]);
-  const [future, setFuture] = useState<Project[]>([]);
+  const historyRef = useRef<History<Project> | null>(null);
+  if (!historyRef.current) historyRef.current = new History<Project>(initial, 100);
+  const [, setHistoryVersion] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playhead, setPlayhead] = useState(0);
   const playheadRef = useRef(0);
@@ -302,6 +381,13 @@ function EditorWorkspace({
     if (playheadRef.current > totalDuration) seek(totalDuration);
   }, [totalDuration, seek]);
 
+  const persistNow = useCallback(() => {
+    setSaveState("saving");
+    void saveProject(projectRef.current)
+      .then(() => setSaveState("saved"))
+      .catch(() => setSaveState("saving"));
+  }, []);
+
   useEffect(() => {
     let timer: number | undefined;
     setSaveState("saving");
@@ -314,6 +400,35 @@ function EditorWorkspace({
       if (timer) window.clearTimeout(timer);
     };
   }, [project]);
+
+  // Uygulama arka plana giderken bekleyen 650 ms'lik kaydı beklemeden yaz.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") persistNow();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    let disposed = false;
+    const handles: { remove: () => Promise<void> }[] = [];
+    if (Capacitor.isNativePlatform()) {
+      void CapacitorApp.addListener("pause", persistNow).then((handle) => {
+        if (disposed) void handle.remove();
+        else handles.push(handle);
+      });
+      void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+        if (!isActive) persistNow();
+      }).then((handle) => {
+        if (disposed) void handle.remove();
+        else handles.push(handle);
+      });
+    }
+
+    return () => {
+      disposed = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      for (const handle of handles) void handle.remove();
+    };
+  }, [persistNow]);
 
   useEffect(() => {
     if (!playing) return;
@@ -349,40 +464,41 @@ function EditorWorkspace({
         !!mergeKey &&
         lastMerge.current.key === mergeKey &&
         now - lastMerge.current.at < 1200;
-      if (!shouldMerge) {
-        setPast((stack) => [...stack.slice(-79), cloneProject(current)]);
-        setFuture([]);
+      const history = historyRef.current!;
+      if (shouldMerge) {
+        history.amend(next);
+      } else {
+        history.execute(snapshotCommand(current, next, mergeKey ?? "düzenleme"));
       }
       lastMerge.current = mergeKey
         ? { key: mergeKey, at: now }
         : { key: "", at: 0 };
       projectRef.current = next;
       setProject(next);
+      setHistoryVersion((value) => value + 1);
     },
     [],
   );
 
   const undo = useCallback(() => {
-    if (past.length === 0) return;
-    const previous = past[past.length - 1];
-    const current = cloneProject(projectRef.current);
-    setPast(past.slice(0, -1));
-    setFuture([...future, current]);
+    const history = historyRef.current!;
+    if (!history.canUndo) return;
+    const previous = history.undo();
     projectRef.current = previous;
     setProject(previous);
+    setHistoryVersion((value) => value + 1);
     lastMerge.current = { key: "", at: 0 };
-  }, [past, future]);
+  }, []);
 
   const redo = useCallback(() => {
-    if (future.length === 0) return;
-    const next = future[future.length - 1];
-    const current = cloneProject(projectRef.current);
-    setFuture(future.slice(0, -1));
-    setPast([...past, current]);
+    const history = historyRef.current!;
+    if (!history.canRedo) return;
+    const next = history.redo();
     projectRef.current = next;
     setProject(next);
+    setHistoryVersion((value) => value + 1);
     lastMerge.current = { key: "", at: 0 };
-  }, [past, future]);
+  }, []);
 
   const patchProject = useCallback(
     (patch: Partial<Project>, mergeKey?: string) => {
@@ -1010,8 +1126,8 @@ function EditorWorkspace({
         project={project}
         clip={selectedClip}
         entry={selectedEntry}
-        canUndo={past.length > 0}
-        canRedo={future.length > 0}
+        canUndo={historyRef.current?.canUndo ?? false}
+        canRedo={historyRef.current?.canRedo ?? false}
         onUndo={undo}
         onRedo={redo}
         onPatchClip={patchClip}
