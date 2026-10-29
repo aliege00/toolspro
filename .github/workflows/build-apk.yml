@@ -34,6 +34,17 @@ jobs:
       - name: Install web dependencies
         run: bun install --frozen-lockfile
 
+      - name: Install FFmpeg for editor tests
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg
+          fi
+          ffmpeg -version | head -1
+
+      - name: Run editor tests
+        run: bun test
+
       - name: Typecheck and build web app
         run: bun run build
 
