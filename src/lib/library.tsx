@@ -236,6 +236,37 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         const keys = new Set(current.map((record) => record.key));
         return [...current, ...index.trashRecords.filter((record) => !keys.has(record.key))];
       });
+
+      // Diskte bulunamayan dosyaların favori, gizli ve albüm işaretlerini de
+      // temizle. Aksi halde liste boşalsa bile bu anahtarlar sonsuza kadar kalır.
+      const liveKeys = new Set<string>([
+        ...entriesRef.current.map((entry) => entry.key),
+        ...loadedEntries.map((entry) => entry.key),
+        ...loadedTrash.map((entry) => entry.key),
+      ]);
+      setFavorites((current) => current.filter((key) => liveKeys.has(key)));
+      setHidden((current) => current.filter((key) => liveKeys.has(key)));
+      setAlbums((current) =>
+        current
+          .map((album) => ({
+            ...album,
+            keys: album.keys.filter((key) => liveKeys.has(key)),
+          }))
+          .filter((album) => album.keys.length > 0),
+      );
+
+      // Disk indeksini de yalnızca gerçekten okunabilen dosyalarla yeniden yaz;
+      // böylece silinmiş dosyalar bir sonraki açılışta yeniden denenmez.
+      const pruned: LibraryIndex = {
+        version: 2,
+        entries: loadedEntries.map(toPersisted).filter((entry): entry is PersistedEntry => !!entry),
+        trash: loadedTrash.map(toPersisted).filter((entry): entry is PersistedEntry => !!entry),
+        trashRecords: index.trashRecords.filter((record) => liveKeys.has(record.key)),
+      };
+      void saveLibraryIndex(pruned).catch((error) => {
+        setStorageError(error instanceof Error ? error.message : "Kitaplık dizini yazılamadı.");
+      });
+
       hydrated.current = true;
       setHydrating(false);
     })();
