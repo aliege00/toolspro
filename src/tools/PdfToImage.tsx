@@ -52,8 +52,12 @@ export default function PdfToImage({ initialFileId }: ToolProps) {
     if (!picked) return;
     void run("PDF → Görsel", async (onProgress, signal) => {
       onProgress(0.04);
-      const pdfjs = await import("pdfjs-dist");
-      const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+      // Eski Android WebView'leri için legacy derleme; modern derleme
+      // Promise.try / Promise.withResolvers olmadan açılmıyor.
+      const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      const worker = (
+        await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")
+      ).default;
       pdfjs.GlobalWorkerOptions.workerSrc = worker;
 
       let doc;
