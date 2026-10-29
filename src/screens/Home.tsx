@@ -35,16 +35,16 @@ const entries: {
     descKey: "home.files.desc",
   },
   {
-    route: "editor",
-    icon: <EditorIcon size={26} />,
-    titleKey: "home.editor.title",
-    descKey: "home.editor.desc",
-  },
-  {
     route: "tools",
     icon: <WrenchIcon size={26} />,
     titleKey: "home.tools.title",
     descKey: "home.tools.desc",
+  },
+  {
+    route: "editor",
+    icon: <EditorIcon size={26} />,
+    titleKey: "home.editor.title",
+    descKey: "home.editor.desc",
   },
 ];
 
