@@ -479,7 +479,7 @@ const tr = {
   "zipExtract.pick": "ZIP Dosyası Seç",
   "zipExtract.accept": ".zip arşivi",
   "zipExtract.note":
-    "Arşivdeki dosyalar kitaplığa çıkarılır; klasör yapısı düzleştirilir. En fazla 500 dosya ve 500 MB açılır.",
+    "Arşivdeki dosyalar kitaplığa çıkarılır. Klasör yapısı düzleştirilir; yalnızca dosya adları korunur. Aynı ad varsa -1, -2 eklenir, üzerine yazılmaz. ../ içeren yollar reddedilir. En fazla 500 dosya ve 500 MB açılır.",
   "zipExtract.run": "Arşivi Aç",
   "zipExtract.done": "{n} dosya kitaplığa eklendi",
   "zipExtract.openFiles": "Dosyalar'da Aç",
@@ -487,6 +487,7 @@ const tr = {
   "zipExtract.empty": "Arşivde dosya bulunamadı.",
   "zipExtract.tooBig": "Arşiv çok büyük; en fazla 500 MB açılabilir.",
   "zipExtract.tooMany": "Arşivde {n} dosyadan fazla var.",
+  "zipExtract.unsafePath": "Arşivde güvenli olmayan bir dosya yolu var (../ veya mutlak yol). Açma iptal edildi.",
   "zipExtract.unsupported": "Arşivde desteklenmeyen bir sıkıştırma yöntemi var.",
 
   "tool.scanner.title": "Belge Tarayıcı",
@@ -1103,7 +1104,7 @@ const en: Record<TKey, string> = {
   "zipExtract.pick": "Choose ZIP File",
   "zipExtract.accept": ".zip archive",
   "zipExtract.note":
-    "Files in the archive are extracted into the library; folder structure is flattened. Up to 500 files and 500 MB are extracted.",
+    "Files are extracted into the library. Folder structure is flattened and only file names are kept. Duplicate names get -1, -2 instead of overwriting. Paths containing ../ are rejected. Up to 500 files and 500 MB are extracted.",
   "zipExtract.run": "Extract",
   "zipExtract.done": "{n} files added to the library",
   "zipExtract.openFiles": "Open in Files",
@@ -1111,6 +1112,7 @@ const en: Record<TKey, string> = {
   "zipExtract.empty": "No files were found in the archive.",
   "zipExtract.tooBig": "The archive is too large; up to 500 MB can be extracted.",
   "zipExtract.tooMany": "The archive contains more than {n} files.",
+  "zipExtract.unsafePath": "The archive contains an unsafe path (../ or absolute). Extraction was cancelled.",
   "zipExtract.unsupported": "The archive uses an unsupported compression method.",
 
   "tool.scanner.title": "Document Scanner",

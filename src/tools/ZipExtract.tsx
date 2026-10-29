@@ -26,18 +26,27 @@ function concatChunks(chunks: Uint8Array[]): Uint8Array<ArrayBuffer> {
   return out;
 }
 
+/** Zip-slip ve mutlak yolları reddet; arşiv içi ad hiçbir zaman yol olarak kullanılmaz. */
+function unsafePath(raw: string): boolean {
+  if (/^[a-zA-Z]:[\\/]/.test(raw) || raw.startsWith("/") || raw.startsWith("\\")) {
+    return true;
+  }
+  return raw.split(/[\\/]+/).some((part) => part === "..");
+}
+
+/** Aynı ad çakışırsa üzerine yazmak yerine -1, -2 ... ekler. */
 function uniqueName(raw: string, used: Set<string>): string {
-  const base = raw.split("/").pop()?.trim() || "dosya";
+  const base = raw.split(/[\\/]+/).pop()?.trim() || "dosya";
   if (!used.has(base)) {
     used.add(base);
     return base;
   }
   const dot = base.lastIndexOf(".");
-  const stem = dot === -1 ? base : base.slice(0, dot);
-  const ext = dot === -1 ? "" : base.slice(dot);
-  let n = 2;
-  while (used.has(`${stem} (${n})${ext}`)) n += 1;
-  const name = `${stem} (${n})${ext}`;
+  const stem = dot <= 0 ? base : base.slice(0, dot);
+  const ext = dot <= 0 ? "" : base.slice(dot);
+  let n = 1;
+  while (used.has(`${stem}-${n}${ext}`)) n += 1;
+  const name = `${stem}-${n}${ext}`;
   used.add(name);
   return name;
 }
@@ -92,6 +101,10 @@ export default function ZipExtract() {
         const unzip = new Unzip((entry) => {
           if (fatal) return;
           if (entry.name.endsWith("/")) return;
+          if (unsafePath(entry.name)) {
+            fatal = t("zipExtract.unsafePath");
+            return;
+          }
           const chunks: Uint8Array[] = [];
           entry.ondata = (err, chunk, final) => {
             if (fatal) return;
