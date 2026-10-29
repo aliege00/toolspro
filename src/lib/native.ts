@@ -51,6 +51,35 @@ type GalleryApi = {
 /** Galeriye video kaydı (android/GalleryPlugin). */
 export const Gallery = registerPlugin<GalleryApi>("Gallery");
 
+export type DeviceDiagnosticsInfo = {
+  freeBytes?: number;
+  totalBytes?: number;
+  memoryFreeBytes?: number;
+  memoryTotalBytes?: number;
+  lowMemory?: boolean;
+  sdk?: number;
+  device?: string;
+  android?: string;
+  storageError?: string;
+  memoryError?: string;
+};
+
+type DeviceDiagnosticsApi = {
+  info: () => Promise<DeviceDiagnosticsInfo>;
+};
+
+/** Cihaz depolama/bellek bilgisi (android/DeviceDiagnosticsPlugin). */
+export const DeviceDiagnostics = registerPlugin<DeviceDiagnosticsApi>("DeviceDiagnostics");
+
+export async function readDeviceDiagnostics(): Promise<DeviceDiagnosticsInfo | null> {
+  if (!Capacitor.isNativePlatform()) return null;
+  try {
+    return await DeviceDiagnostics.info();
+  } catch {
+    return null;
+  }
+}
+
 export function isNative(): boolean {
   return Capacitor.isNativePlatform();
 }

@@ -4,6 +4,7 @@ import {
   projectDuration,
 } from "../../src/editor/core/model";
 import type { Clip, Project } from "../../src/editor/core/model";
+import { History, snapshotCommand } from "../../src/editor/core/history";
 import {
   compactTrack,
   duplicateClip,
@@ -132,5 +133,26 @@ describe("zaman çizelgesi", () => {
     const compact = compactTrack(project, project.tracks[0].id);
     expect(compact.tracks[0].clips[0].start).toBe(0);
     expect(compact.tracks[0].clips[1].start).toBe(2);
+  });
+
+  test("her zaman çizelgesi işlemi geri alınınca proje birebir aynı olur", () => {
+    const start = withClips(clip("a", 0, 3), clip("b", 5, 2));
+    const operations: ((project: Project) => Project)[] = [
+      (project) => splitClip(project, "a", 1.5).project,
+      (project) => trimClip(project, "a", "left", 0.5),
+      (project) => trimClip(project, "a", "right", -0.5),
+      (project) => setClipSpeed(project, "a", 2),
+      (project) => setClipReverse(project, "a", true),
+      (project) => setClipFade(project, "a", "in", 0.5),
+      (project) => moveClip(project, "b", 1),
+      (project) => duplicateClip(project, "a").project,
+      (project) => compactTrack(project, project.tracks[0].id),
+    ];
+    for (const operation of operations) {
+      const after = operation(start);
+      const history = new History<Project>(start);
+      history.execute(snapshotCommand(start, after));
+      expect(history.undo()).toEqual(start);
+    }
   });
 });

@@ -18,6 +18,7 @@ import {
   subscribeErrorLog,
 } from "@/lib/errorLog";
 import { usePacks } from "@/packs/PacksProvider";
+import DiagnosticsSheet from "@/components/DiagnosticsSheet";
 
 export const ACCENTS: { id: string; label: string; swatch: string }[] = [
   { id: "blue", label: "Mavi", swatch: "#007aff" },
@@ -62,6 +63,7 @@ export default function Settings() {
     clearError: clearPackError,
   } = usePacks();
 
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [confirmPack, setConfirmPack] = useState<string | null>(null);
   const [confirmRemovePack, setConfirmRemovePack] = useState<string | null>(null);
   const errors = useSyncExternalStore(subscribeErrorLog, getErrorLog, getErrorLog);
@@ -399,6 +401,25 @@ export default function Settings() {
 
         <motion.section className="mt-6" {...rise(5)}>
           <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
+            {t("settings.diagnostics")}
+          </h2>
+          <div className="rounded-[16px] bg-card p-4 shadow-[var(--shadow-card)]">
+            <p className="text-[12.5px] leading-[1.5] text-ink2">
+              {t("settings.diagnosticsNote")}
+            </p>
+            <Button
+              full
+              className="mt-3"
+              variant="secondary"
+              onClick={() => setDiagnosticsOpen(true)}
+            >
+              {t("settings.diagnosticsOpen")}
+            </Button>
+          </div>
+        </motion.section>
+
+        <motion.section className="mt-6" {...rise(6)}>
+          <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
             {t("settings.errorLog")}
           </h2>
           <div className="rounded-[16px] bg-card p-4 shadow-[var(--shadow-card)]">
@@ -452,7 +473,7 @@ export default function Settings() {
           </div>
         </motion.section>
 
-        <motion.section className="mt-6" {...rise(6)}>
+        <motion.section className="mt-6" {...rise(7)}>
           <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
             {t("settings.about")}
           </h2>
@@ -482,6 +503,11 @@ export default function Settings() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <DiagnosticsSheet
+        open={diagnosticsOpen}
+        onClose={() => setDiagnosticsOpen(false)}
+      />
 
       <AnimatePresence>
         {pinFlow && (

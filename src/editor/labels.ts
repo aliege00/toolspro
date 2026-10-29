@@ -26,6 +26,14 @@ const tr = {
   exportTitle: "Dışa Aktarma",
   quality: "Çözünürlük",
   exportNote: "Video cihazda, FFmpeg ile yeniden kodlanır. Süre dosya boyuna ve çözünürlüğe göre uzar.",
+  gapNote: "Klipler arasındaki boşluklar siyah ekran ve sessizlik olarak dışa aktarılır.",
+  quickTest: "Hızlı test (60 sn)",
+  quickTestNote:
+    "60 saniyelik sentetik bir klibi 480p olarak dışa aktarır ve geçen süreyi ölçer. Kitaplığa dokunmaz.",
+  quickTestRunning: "Dışa aktarılıyor… {s} sn",
+  quickTestDone: "Tamamlandı: {s} sn · {size}",
+  quickTestFail: "Hızlı test başarısız oldu. Tanılama ekranındaki hata günlüğüne bak.",
+  quickTestCanceled: "Hızlı test iptal edildi.",
   memoryWarning:
     "Bu proje büyük ({size}). FFmpeg.wasm belleği sınırlıdır; dışa aktarma başarısız olursa daha kısa bir klip veya 480p deneyin.",
   durationWarning: "Uzun projelerde bellek ve işlem süresi belirgin artar.",
@@ -174,6 +182,14 @@ const en: Record<EditorKey, string> = {
   exportTitle: "Export",
   quality: "Resolution",
   exportNote: "Video is re-encoded on device with FFmpeg. Time grows with length and resolution.",
+  gapNote: "Gaps between clips are exported as black video and silence.",
+  quickTest: "Quick test (60 s)",
+  quickTestNote:
+    "Exports a 60-second synthetic clip at 480p and measures elapsed time. It does not touch the library.",
+  quickTestRunning: "Exporting… {s} s",
+  quickTestDone: "Done: {s} s · {size}",
+  quickTestFail: "Quick test failed. Check the error log in Diagnostics.",
+  quickTestCanceled: "Quick test cancelled.",
   memoryWarning:
     "This project is large ({size}). FFmpeg.wasm has limited memory; if export fails, try a shorter clip or 480p.",
   durationWarning: "Long projects noticeably increase memory use and processing time.",
