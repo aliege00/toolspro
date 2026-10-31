@@ -37,7 +37,7 @@ import { subtitleClips } from "@/editor/core/subtitles";
 import { moveClipToTrack } from "@/editor/core/timeline";
 import type { PackMusicItem, PackStickerItem } from "@/packs/types";
 import { clamp, clipFromEntry, clipEnd, createProject, createTrack, freeStart, projectDuration, sortedClips, textClip } from "@/editor/types";
-import type { Clip, Project, TrackKind } from "@/editor/types";
+import type { Clip, ClipText, Project, TrackKind } from "@/editor/types";
 import { History, snapshotCommand } from "@/editor/core/history";
 
 function clipCount(project: Project): number {
@@ -331,6 +331,7 @@ function EditorWorkspace({
   if (!historyRef.current) historyRef.current = new History<Project>(initial, 100);
   const [, setHistoryVersion] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [textEditSignal, setTextEditSignal] = useState(0);
   const [playhead, setPlayhead] = useState(0);
   const playheadRef = useRef(0);
   const [playing, setPlaying] = useState(false);
@@ -996,6 +997,20 @@ function EditorWorkspace({
     [],
   );
 
+  const applyTextStyle = useCallback(
+    (style: Partial<ClipText>) => {
+      commit((draft) => {
+        for (const track of draft.tracks) {
+          for (const item of track.clips) {
+            if (item.kind !== "text" || !item.text) continue;
+            item.text = { ...item.text, ...style };
+          }
+        }
+      });
+    },
+    [commit],
+  );
+
   const addText = useCallback(() => {
     const duration = 3;
     const track =
@@ -1013,6 +1028,9 @@ function EditorWorkspace({
       target.clips = sortedClips(target);
     });
     setSelectedId(clip.id);
+    // Metin eklendiği anda düzenleme sayfasını aç: kullanıcı içeriği
+    // aşağıdaki panelde aramak zorunda kalmaz.
+    setTextEditSignal((value) => value + 1);
   }, [commit]);
 
   // SRT dosyasındaki altyazılar alt hizalı metin klipleri olarak eklenir.
@@ -1190,6 +1208,8 @@ function EditorWorkspace({
         onAddText={addText}
         onImportSrt={() => void importSrt()}
         onMoveToTrack={moveToTrack}
+        textEditSignal={textEditSignal}
+        onApplyTextStyle={applyTextStyle}
         trackKind={selectedTrack?.kind ?? null}
         recording={recording}
         onAddMusic={() => void addMusic()}

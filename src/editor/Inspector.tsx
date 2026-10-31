@@ -1,4 +1,5 @@
-import { Button, Slider, Toggle } from "@/components/ui";
+import { useEffect, useState } from "react";
+import { Button, Sheet, Slider, Toggle } from "@/components/ui";
 import {
   CopyIcon,
   FlipHIcon,
@@ -17,7 +18,17 @@ import {
 } from "@/components/Icons";
 import { formatBytes, formatDuration } from "@/lib/files";
 import type { Entry } from "@/lib/library";
-import type { Clip, FilterPreset, Project, TextAlign, TextAnim, TextVAlign, TrackKind, TransitionId } from "./types";
+import type {
+  Clip,
+  ClipText,
+  FilterPreset,
+  Project,
+  TextAlign,
+  TextAnim,
+  TextVAlign,
+  TrackKind,
+  TransitionId,
+} from "./types";
 import { ASPECTS, SPEED_MAX, SPEED_MIN, trackAccepts } from "./types";
 import { useEditorT } from "./labels";
 import { usePacks } from "@/packs/PacksProvider";
@@ -32,6 +43,50 @@ const FONTS = [
 ] as const;
 const TEXT_COLORS = ["#ffffff", "#d1d1d6", "#8e8e93", "#48484a", "#1c1c1e", "#b08968"];
 const ANIMS: TextAnim[] = ["none", "fade", "slide", "zoom"];
+
+/** Tek dokunuşla uygulanan hazır metin stilleri. */
+const TEXT_PRESETS: {
+  id: string;
+  labelKey: "presetTitle" | "presetSubtitle" | "presetQuote";
+  patch: Partial<ClipText>;
+}[] = [
+  {
+    id: "title",
+    labelKey: "presetTitle",
+    patch: {
+      size: 64,
+      align: "center",
+      vAlign: "center",
+      font: "system",
+      animIn: "zoom",
+      animOut: "fade",
+    },
+  },
+  {
+    id: "subtitle",
+    labelKey: "presetSubtitle",
+    patch: {
+      size: 34,
+      align: "center",
+      vAlign: "bottom",
+      font: "system",
+      animIn: "none",
+      animOut: "none",
+    },
+  },
+  {
+    id: "quote",
+    labelKey: "presetQuote",
+    patch: {
+      size: 42,
+      align: "left",
+      vAlign: "center",
+      font: "serif",
+      animIn: "fade",
+      animOut: "fade",
+    },
+  },
+];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -153,6 +208,8 @@ export default function Inspector({
   onAddText,
   onImportSrt,
   onMoveToTrack,
+  textEditSignal,
+  onApplyTextStyle,
   trackKind,
   recording,
   onAddMusic,
@@ -179,6 +236,9 @@ export default function Inspector({
   onAddText: () => void;
   onImportSrt: () => void;
   onMoveToTrack: (trackId: string) => void;
+  /** Her artışta metin düzenleme sayfası açılır. */
+  textEditSignal: number;
+  onApplyTextStyle: (style: Partial<ClipText>) => void;
   trackKind: TrackKind | null;
   recording: boolean;
   onAddMusic: () => void;
@@ -189,6 +249,7 @@ export default function Inspector({
   onAddSticker: (item: PackStickerItem) => void;
 }) {
   const t = useEditorT();
+  const [textOpen, setTextOpen] = useState(false);
   const {
     transitions: packTransitions,
     filters: packFilters,
@@ -214,6 +275,15 @@ export default function Inspector({
     if (!clip) return;
     onPatchClip(clip.id, value, `${clip.id}:${key}`);
   };
+
+  useEffect(() => {
+    if (textEditSignal > 0) setTextOpen(true);
+  }, [textEditSignal]);
+
+  // Seçim metin değilse düzenleme sayfası açık kalmasın.
+  useEffect(() => {
+    if (!clip || !clip.text) setTextOpen(false);
+  }, [clip]);
 
   // Seçili klibin izi ve taşınabileceği diğer izler.
   const containingTrack = clip
@@ -881,6 +951,16 @@ export default function Inspector({
             <section>
               <SectionLabel>{t("textContent")}</SectionLabel>
               <Panel>
+                <Button
+                  full
+                  size="sm"
+                  variant="secondary"
+                  className="mb-2.5"
+                  onClick={() => setTextOpen(true)}
+                >
+                  <TextIcon size={16} />
+                  {t("editText")}
+                </Button>
                 <textarea
                   value={clip.text.content}
                   onChange={(event) =>
@@ -1036,6 +1116,68 @@ export default function Inspector({
           onAddMusic={onAddPackMusic}
           onAddSticker={onAddSticker}
         />
+      )}
+
+      {clip && clip.text && (
+        <Sheet open={textOpen} onClose={() => setTextOpen(false)} title={t("editText")}>
+          <div className="space-y-4">
+            <textarea
+              autoFocus
+              value={clip.text.content}
+              onChange={(event) =>
+                patch(
+                  { text: { ...clip.text!, content: event.target.value } },
+                  "textContent",
+                )
+              }
+              rows={5}
+              className="w-full resize-none rounded-[12px] bg-fill px-3.5 py-3 text-[15px] leading-[1.45] outline-none"
+              placeholder={t("textContent")}
+            />
+
+            <div>
+              <p className="mb-2 text-[11.5px] text-ink3">{t("textPreset")}</p>
+              <div className="grid grid-cols-3 gap-1.5 rounded-[10px] bg-fill p-1">
+                {TEXT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() =>
+                      patch({ text: { ...clip.text!, ...preset.patch } }, "textPreset")
+                    }
+                    className="rounded-[8px] bg-card py-2.5 text-[12px] font-medium text-ink shadow-[var(--shadow-card)] active:opacity-60"
+                  >
+                    {t(preset.labelKey)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Button
+              full
+              variant="secondary"
+              onClick={() => {
+                onApplyTextStyle({
+                  size: clip.text!.size,
+                  align: clip.text!.align,
+                  vAlign: clip.text!.vAlign ?? "center",
+                  font: clip.text!.font,
+                  color: clip.text!.color,
+                  animIn: clip.text!.animIn,
+                  animOut: clip.text!.animOut,
+                });
+                setTextOpen(false);
+              }}
+            >
+              {t("applyToAllText")}
+            </Button>
+
+            <p className="text-[11.5px] leading-[1.45] text-ink3">{t("textEditNote")}</p>
+            <Button full onClick={() => setTextOpen(false)}>
+              {t("close")}
+            </Button>
+          </div>
+        </Sheet>
       )}
     </div>
   );
