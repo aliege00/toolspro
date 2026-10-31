@@ -29,6 +29,7 @@ const tr = {
     "Tarayıcı önizlemesinde izinler sistem dosya seçiciyle sorulur; Android sürümünde cihaz izin penceresi açılır.",
   "onboarding.denied":
     "İzin verilmedi. Yine de devam edebilirsin; dosyalara sistem seçicisi üzerinden erişilmeye devam eder.",
+  "onboarding.openSettings": "Uygulama Ayarlarını Aç",
   "onboarding.ready": "Hazır",
 
   "home.tagline": "Oynat, göz at, dönüştür",
@@ -723,6 +724,7 @@ const en: Record<TKey, string> = {
     "In the browser preview permissions are asked by the system file picker; on Android a native permission dialog opens.",
   "onboarding.denied":
     "Permission not granted. You can still continue; files stay accessible through the system picker.",
+  "onboarding.openSettings": "Open App Settings",
   "onboarding.ready": "Ready",
 
   "home.tagline": "Play, browse, convert",

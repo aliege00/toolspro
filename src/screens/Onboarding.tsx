@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { App as CapacitorApp } from "@capacitor/app";
 import { Button } from "@/components/ui";
 import { FolderIcon, ShieldIcon, VideoIcon, WrenchIcon } from "@/components/Icons";
-import { isNative, requestMediaAccess } from "@/lib/native";
+import {
+  checkMediaAccess,
+  isNative,
+  openAppSettings,
+  requestMediaAccess,
+} from "@/lib/native";
 import { useT } from "@/i18n";
 
 type Status = "idle" | "requesting" | "granted" | "denied";
@@ -37,6 +43,38 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
     const timer = window.setTimeout(onDone, 1100);
     return () => window.clearTimeout(timer);
   }, [status, onDone]);
+
+  // Android'de daha önce izin verilmişse ekranı boşuna gösterme.
+  useEffect(() => {
+    if (!isNative()) return;
+    let alive = true;
+    void checkMediaAccess().then((granted) => {
+      if (alive && granted) setStatus("granted");
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Kullanıcı Ayarlar'dan dönünce durumu yeniden oku; eski "reddedildi"
+  // yazısı izin verilmiş olsa bile ekranda kalıyordu.
+  useEffect(() => {
+    if (!isNative()) return;
+    let disposed = false;
+    let handle: { remove: () => Promise<void> } | undefined;
+    void CapacitorApp.addListener("resume", () => {
+      void checkMediaAccess().then((granted) => {
+        if (granted && !disposed) setStatus("granted");
+      });
+    }).then((listener) => {
+      if (disposed) void listener.remove();
+      else handle = listener;
+    });
+    return () => {
+      disposed = true;
+      void handle?.remove();
+    };
+  }, []);
 
   const request = async () => {
     setStatus("requesting");
@@ -122,10 +160,13 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
               {status === "denied" ? t("onboarding.retry") : t("onboarding.grant")}
             </Button>
             {status === "denied" && (
-              <Button full variant="gray" onClick={onDone}>
-                {t("onboarding.skip")}
+              <Button full variant="secondary" onClick={() => void openAppSettings()}>
+                {t("onboarding.openSettings")}
               </Button>
             )}
+            <Button full variant="gray" onClick={onDone}>
+              {t("onboarding.skip")}
+            </Button>
           </>
         )}
       </div>

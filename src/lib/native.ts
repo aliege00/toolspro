@@ -10,6 +10,7 @@ type PermissionsApi = {
   requestCamera: () => Promise<{ granted: boolean }>;
   requestMic: () => Promise<{ granted: boolean }>;
   requestNotifications: () => Promise<{ granted: boolean }>;
+  openSettings: () => Promise<void>;
 };
 
 /** Uygulamanın kendi Capacitor eklentisi (android/MediaPermissionsPlugin). */
@@ -84,12 +85,25 @@ export function isNative(): boolean {
   return Capacitor.isNativePlatform();
 }
 
+/** Mevcut medya izin durumunu sorar; izin istemez. */
+export async function checkMediaAccess(): Promise<boolean> {
+  if (!isNative()) return true;
+  try {
+    const res = await MediaPermissions.check();
+    return res.granted;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Android'de gerçek runtime izni ister (READ_MEDIA_* / READ_EXTERNAL_STORAGE).
+ * Zaten izin verilmişse sistem penceresi açılmaz.
  * Web'de sistem dosya seçicisi zaten izin sorar, bu yüzden doğrudan true döner.
  */
 export async function requestMediaAccess(): Promise<boolean> {
   if (!isNative()) return true;
+  if (await checkMediaAccess()) return true;
   try {
     const res = await MediaPermissions.request();
     return res.granted;
@@ -117,6 +131,16 @@ export async function requestMicAccess(): Promise<boolean> {
     return res.granted;
   } catch {
     return false;
+  }
+}
+
+/** İzin kalıcı olarak reddedildiyse uygulama ayarlarını açar. */
+export async function openAppSettings(): Promise<void> {
+  if (!isNative()) return;
+  try {
+    await MediaPermissions.openSettings();
+  } catch {
+    // Ayarlar açılamadı; kullanıcı elle deneyebilir.
   }
 }
 

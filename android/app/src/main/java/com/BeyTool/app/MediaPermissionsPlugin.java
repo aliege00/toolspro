@@ -1,7 +1,11 @@
 package com.BeyTool.app;
 
 import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -59,12 +63,30 @@ public class MediaPermissionsPlugin extends Plugin {
 
     @PluginMethod
     public void check(PluginCall call) {
-        resolveGranted(call, isGranted(activeMediaAlias()));
+        resolveGranted(call, mediaGranted());
     }
 
     @PluginMethod
     public void request(PluginCall call) {
+        if (mediaGranted()) {
+            resolveGranted(call, true);
+            return;
+        }
         requestForAlias(activeMediaAlias(), call);
+    }
+
+    /** Uygulama ayarlarını açar; izin kalıcı olarak reddedildiğinde kullanılır. */
+    @PluginMethod
+    public void openSettings(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception error) {
+            call.reject("Ayarlar açılamadı.", error);
+        }
     }
 
     @PluginMethod
@@ -100,7 +122,33 @@ public class MediaPermissionsPlugin extends Plugin {
     private void aliasPermissionCallback(PluginCall call) {
         String alias = pendingAlias;
         pendingAlias = null;
-        resolveGranted(call, alias != null && isGranted(alias));
+        boolean granted =
+            MEDIA_ALIAS.equals(alias)
+                ? mediaGranted()
+                : alias != null && isGranted(alias);
+        resolveGranted(call, granted);
+    }
+
+    /**
+     * Android 13+ medya erişimi: kullanıcı yalnızca fotoğraf/video izni vermiş
+     * ya da Android 14'te "seçili fotoğraflar"ı seçmiş olabilir. Uygulama
+     * dosyaları SAF seçiciyle açtığı için herhangi biri yeterlidir; hepsini
+     * şart koşmak izin verilmiş görünürken "reddedildi" demeye yol açıyordu.
+     */
+    private boolean mediaGranted() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            return granted(Manifest.permission.READ_MEDIA_IMAGES)
+                || granted(Manifest.permission.READ_MEDIA_VIDEO)
+                || granted(Manifest.permission.READ_MEDIA_AUDIO)
+                || (Build.VERSION.SDK_INT >= 34
+                    && granted(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED));
+        }
+        return granted(Manifest.permission.READ_EXTERNAL_STORAGE);
+    }
+
+    private boolean granted(String permission) {
+        return getContext().checkSelfPermission(permission)
+            == PackageManager.PERMISSION_GRANTED;
     }
 
     private void resolveGranted(PluginCall call, boolean granted) {
