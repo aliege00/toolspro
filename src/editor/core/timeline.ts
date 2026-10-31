@@ -9,6 +9,7 @@ import {
   clipEnd,
   newId,
   sortedClips,
+  trackAccepts,
   trackEnd,
 } from "./model";
 import type { Clip, Project, Track } from "./model";
@@ -170,6 +171,33 @@ export function moveClip(project: Project, clipId: string, desiredStart: number)
   if (!clip) return project;
   clip.start = Math.max(0, desiredStart);
   track.clips = sortedClips(track);
+  return normalizeProject(next);
+}
+
+/**
+ * Klibi başka bir ize taşır. Hedef iz türü kabul etmiyorsa proje değişmeden
+ * döner. Hedef izde çakışma varsa normalizeProject klibi boşluğa iter.
+ */
+export function moveClipToTrack(
+  project: Project,
+  clipId: string,
+  targetTrackId: string,
+): Project {
+  const found = findClip(project, clipId);
+  if (!found) return project;
+  if (found.track.id === targetTrackId) return project;
+  const target = project.tracks.find((track) => track.id === targetTrackId);
+  if (!target || !trackAccepts(target.kind, found.clip.kind)) return project;
+
+  const next = cloneProject(project);
+  const source = next.tracks.find((track) => track.id === found.track.id);
+  const destination = next.tracks.find((track) => track.id === targetTrackId);
+  if (!source || !destination) return project;
+  const index = source.clips.findIndex((clip) => clip.id === clipId);
+  if (index === -1) return project;
+  const [clip] = source.clips.splice(index, 1);
+  destination.clips.push(clip);
+  destination.clips = sortedClips(destination);
   return normalizeProject(next);
 }
 

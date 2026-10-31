@@ -422,7 +422,12 @@ export default function Preview({
               key={clip.id}
               className="pointer-events-none absolute inset-0 flex px-[6%] py-[8%]"
               style={{
-                alignItems: "center",
+                alignItems:
+                  text.vAlign === "bottom"
+                    ? "flex-end"
+                    : text.vAlign === "top"
+                      ? "flex-start"
+                      : "center",
                 justifyContent: justify,
                 opacity: animation.opacity,
                 transform: animation.transform,

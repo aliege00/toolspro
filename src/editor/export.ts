@@ -169,7 +169,13 @@ async function renderTextPng(
   const lineHeight = fontSize * 1.18;
   const totalHeight = lines.length * lineHeight;
   const x = text.align === "left" ? width * 0.07 : text.align === "right" ? width * 0.93 : width / 2;
-  let y = height / 2 - totalHeight / 2 + lineHeight / 2;
+  const padY = height * 0.1;
+  let y =
+    text.vAlign === "bottom"
+      ? height - padY - totalHeight + lineHeight / 2
+      : text.vAlign === "top"
+        ? padY + lineHeight / 2
+        : height / 2 - totalHeight / 2 + lineHeight / 2;
   for (const item of lines) {
     context.fillText(item, x, y, maxWidth);
     y += lineHeight;

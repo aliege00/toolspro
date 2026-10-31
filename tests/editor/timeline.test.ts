@@ -9,12 +9,14 @@ import {
   compactTrack,
   duplicateClip,
   moveClip,
+  moveClipToTrack,
   setClipFade,
   setClipReverse,
   setClipSpeed,
   splitClip,
   trimClip,
 } from "../../src/editor/core/timeline";
+import { createTrack } from "../../src/editor/core/model";
 
 function clip(id: string, start: number, duration: number, sourceDuration = 20, speed = 1): Clip {
   return {
@@ -154,5 +156,44 @@ describe("zaman çizelgesi", () => {
       history.execute(snapshotCommand(start, after));
       expect(history.undo()).toEqual(start);
     }
+  });
+});
+
+describe("iz değiştirme", () => {
+  test("klip başka ize taşınınca zamanı ve süresi korunur", () => {
+    const project = withClips(clip("a", 0, 4), clip("b", 4, 3));
+    const overlay = createTrack("overlay", 1);
+    project.tracks.push(overlay);
+
+    const next = moveClipToTrack(project, "b", overlay.id);
+    const moved = next.tracks.find((track) => track.id === overlay.id)!;
+    expect(moved.clips).toHaveLength(1);
+    expect(moved.clips[0].id).toBe("b");
+    expect(moved.clips[0].start).toBeCloseTo(4, 5);
+    expect(moved.clips[0].duration).toBeCloseTo(3, 5);
+    expect(next.tracks[0].clips.map((item) => item.id)).toEqual(["a"]);
+    expect(projectDuration(next)).toBeCloseTo(7, 5);
+  });
+
+  test("klip türü hedef iz tarafından kabul edilmiyorsa proje değişmez", () => {
+    const project = withClips(clip("a", 0, 4));
+    const audioTrack = project.tracks.find((track) => track.kind === "audio")!;
+    expect(moveClipToTrack(project, "a", audioTrack.id)).toBe(project);
+  });
+
+  test("aynı ize taşıma işlem yapmaz", () => {
+    const project = withClips(clip("a", 0, 4));
+    expect(moveClipToTrack(project, "a", project.tracks[0].id)).toBe(project);
+  });
+
+  test("taşıma geri alınınca proje birebir aynı olur", () => {
+    const start = withClips(clip("a", 0, 4));
+    const overlay = createTrack("overlay", 1);
+    start.tracks.push(overlay);
+    const after = moveClipToTrack(start, "a", overlay.id);
+
+    const history = new History<Project>(start);
+    history.execute(snapshotCommand(start, after));
+    expect(history.undo()).toEqual(start);
   });
 });

@@ -32,6 +32,9 @@ import Inspector from "@/editor/Inspector";
 import ExportSheet from "@/editor/ExportSheet";
 import { probeDuration, resolveEntry } from "@/editor/media";
 import { readPackAssetBlob } from "@/packs/install";
+import { parseSrt } from "@/lib/srt";
+import { subtitleClips } from "@/editor/core/subtitles";
+import { moveClipToTrack } from "@/editor/core/timeline";
 import type { PackMusicItem, PackStickerItem } from "@/packs/types";
 import { clamp, clipFromEntry, clipEnd, createProject, createTrack, freeStart, projectDuration, sortedClips, textClip } from "@/editor/types";
 import type { Clip, Project, TrackKind } from "@/editor/types";
@@ -1012,6 +1015,45 @@ function EditorWorkspace({
     setSelectedId(clip.id);
   }, [commit]);
 
+  // SRT dosyasındaki altyazılar alt hizalı metin klipleri olarak eklenir.
+  const importSrt = useCallback(async () => {
+    const files = await pickFiles({ accept: ".srt,text/vtt" });
+    const file = files[0];
+    if (!file) return;
+    try {
+      const { cues } = parseSrt(await file.text());
+      const clips = subtitleClips(cues, { offset: playheadRef.current });
+      if (clips.length === 0) {
+        notify(t("importSubsEmpty"));
+        return;
+      }
+      commit((draft) => {
+        let target = draft.tracks.find((item) => item.kind === "text");
+        if (!target) {
+          target = createTrack("text", 1);
+          draft.tracks.push(target);
+        }
+        target.clips.push(...clips);
+        target.clips = sortedClips(target);
+      });
+      notify(t("importSubsDone", { n: clips.length }));
+      setSelectedId(clips[0].id);
+    } catch {
+      notify(t("error"));
+    }
+  }, [commit, notify, t]);
+
+  const moveToTrack = useCallback(
+    (trackId: string) => {
+      if (!selectedId) return;
+      commit((draft) => {
+        const moved = moveClipToTrack(draft, selectedId, trackId);
+        draft.tracks = moved.tracks;
+      });
+    },
+    [commit, selectedId],
+  );
+
   const togglePlay = useCallback(() => {
     if (playing) {
       setPlaying(false);
@@ -1146,6 +1188,8 @@ function EditorWorkspace({
         onAddTrack={addTrack}
         onAddMedia={() => void addMedia()}
         onAddText={addText}
+        onImportSrt={() => void importSrt()}
+        onMoveToTrack={moveToTrack}
         trackKind={selectedTrack?.kind ?? null}
         recording={recording}
         onAddMusic={() => void addMusic()}

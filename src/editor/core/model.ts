@@ -23,12 +23,16 @@ export type ClipFilter = {
   preset: FilterPreset;
 };
 
+export type TextVAlign = "top" | "center" | "bottom";
+
 export type ClipText = {
   content: string;
   font: string;
   size: number;
   color: string;
   align: TextAlign;
+  /** Dikey konum. Eski projelerde yok; yokken orta kabul edilir. */
+  vAlign?: TextVAlign;
   animIn: TextAnim;
   animOut: TextAnim;
 };

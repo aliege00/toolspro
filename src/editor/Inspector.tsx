@@ -17,8 +17,8 @@ import {
 } from "@/components/Icons";
 import { formatBytes, formatDuration } from "@/lib/files";
 import type { Entry } from "@/lib/library";
-import type { Clip, FilterPreset, Project, TextAlign, TextAnim, TrackKind, TransitionId } from "./types";
-import { ASPECTS, SPEED_MAX, SPEED_MIN } from "./types";
+import type { Clip, FilterPreset, Project, TextAlign, TextAnim, TextVAlign, TrackKind, TransitionId } from "./types";
+import { ASPECTS, SPEED_MAX, SPEED_MIN, trackAccepts } from "./types";
 import { useEditorT } from "./labels";
 import { usePacks } from "@/packs/PacksProvider";
 import type { PackMusicItem, PackStickerItem } from "@/packs/types";
@@ -151,6 +151,8 @@ export default function Inspector({
   onAddTrack,
   onAddMedia,
   onAddText,
+  onImportSrt,
+  onMoveToTrack,
   trackKind,
   recording,
   onAddMusic,
@@ -175,6 +177,8 @@ export default function Inspector({
   onAddTrack: (kind: TrackKind) => void;
   onAddMedia: () => void;
   onAddText: () => void;
+  onImportSrt: () => void;
+  onMoveToTrack: (trackId: string) => void;
   trackKind: TrackKind | null;
   recording: boolean;
   onAddMusic: () => void;
@@ -210,6 +214,16 @@ export default function Inspector({
     if (!clip) return;
     onPatchClip(clip.id, value, `${clip.id}:${key}`);
   };
+
+  // Seçili klibin izi ve taşınabileceği diğer izler.
+  const containingTrack = clip
+    ? project.tracks.find((track) => track.clips.some((item) => item.id === clip.id)) ?? null
+    : null;
+  const otherTracks = clip
+    ? project.tracks.filter(
+        (track) => track.id !== containingTrack?.id && trackAccepts(track.kind, clip.kind),
+      )
+    : [];
 
   return (
     <div className="space-y-5 px-4 pb-10 pt-4">
@@ -372,6 +386,23 @@ export default function Inspector({
             </Panel>
           </section>
 
+          <section>
+            <SectionLabel>{t("importSubs")}</SectionLabel>
+            <Panel>
+              <button
+                type="button"
+                onClick={onImportSrt}
+                className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-[11px] bg-fill text-ink2 active:opacity-60"
+              >
+                <TextIcon size={18} />
+                <span className="text-[12.5px] font-medium">{t("importSubs")}</span>
+              </button>
+              <p className="mt-2 px-0.5 text-[10.5px] leading-[1.4] text-ink3">
+                {t("importSubsNote")}
+              </p>
+            </Panel>
+          </section>
+
           <p className="px-1 text-center text-[11.5px] leading-[1.45] text-ink3">
             {t("localNote")}
           </p>
@@ -419,8 +450,30 @@ export default function Inspector({
                 onClick={onDelete}
                 danger
               />
-            </div>
-          </div>
+            </div>            </div>
+
+            {otherTracks.length > 0 && (
+              <section className="mt-4">
+                <SectionLabel>{t("moveTrack")}</SectionLabel>
+                <Panel>
+                  <div className="flex flex-wrap gap-1.5">
+                    {otherTracks.map((track) => (
+                      <button
+                        key={track.id}
+                        type="button"
+                        onClick={() => onMoveToTrack(track.id)}
+                        className="min-h-[36px] rounded-[9px] border border-line bg-fill/40 px-3 text-[11.5px] font-medium text-ink2 active:opacity-60"
+                      >
+                        {track.name}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 px-0.5 text-[10.5px] leading-[1.4] text-ink3">
+                    {t("moveTrackNote")}
+                  </p>
+                </Panel>
+              </section>
+            )}
 
           {hasAudio && clip.freezeAt === undefined && (
             <section>
@@ -867,6 +920,25 @@ export default function Inspector({
                         }`}
                       >
                         {t(align)}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-3 gap-1.5 rounded-[10px] bg-fill p-1">
+                    {(["bottom", "center", "top"] as TextVAlign[]).map((vAlign) => (
+                      <button
+                        key={vAlign}
+                        type="button"
+                        onClick={() =>
+                          patch({ text: { ...clip.text!, vAlign } }, "textVAlign")
+                        }
+                        className={`rounded-[8px] py-2 text-[12px] font-medium ${
+                          (clip.text!.vAlign ?? "center") === vAlign
+                            ? "bg-card text-ink shadow-[var(--shadow-card)]"
+                            : "text-ink2"
+                        }`}
+                      >
+                        {t(vAlign)}
                       </button>
                     ))}
                   </div>
