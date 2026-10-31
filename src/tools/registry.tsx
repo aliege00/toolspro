@@ -57,6 +57,10 @@ import ScannerTool from "./ScannerTool";
 import RenameTool from "./RenameTool";
 import VoiceRecorder from "./VoiceRecorder";
 import VideoSpeed from "./VideoSpeed";
+import VideoResize from "./VideoResize";
+import GifToVideo from "./GifToVideo";
+import AudioVolume from "./AudioVolume";
+import PdfNumbering from "./PdfNumbering";
 import AudioConvert from "./AudioConvert";
 import AudioSpeed from "./AudioSpeed";
 import PptxToPdf from "./PptxToPdf";
@@ -331,6 +335,34 @@ export const tools: ToolMeta[] = [
     icon: <InfoIcon size={24} />,
     component: VideoInfo,
   },
+  {
+    id: "video-resize",
+    titleKey: "tool.videoResize.title",
+    descKey: "tool.videoResize.desc",
+    icon: <CompressIcon size={24} />,
+    component: VideoResize,
+  },
+  {
+    id: "gif-to-video",
+    titleKey: "tool.gifToVideo.title",
+    descKey: "tool.gifToVideo.desc",
+    icon: <RepeatIcon size={24} />,
+    component: GifToVideo,
+  },
+  {
+    id: "audio-volume",
+    titleKey: "tool.audioVolume.title",
+    descKey: "tool.audioVolume.desc",
+    icon: <VolumeIcon size={24} />,
+    component: AudioVolume,
+  },
+  {
+    id: "pdf-numbering",
+    titleKey: "tool.pdfNumbering.title",
+    descKey: "tool.pdfNumbering.desc",
+    icon: <SortIcon size={24} />,
+    component: PdfNumbering,
+  },
 ];
 
 export function toolById(id: string): ToolMeta | undefined {
@@ -356,6 +388,7 @@ const CATEGORY_IDS: Record<ToolCategory, string[]> = {
     "video-join",
     "video-mute",
     "video-compress",
+    "video-resize",
     "video-rotate",
     "video-watermark",
     "video-speed",
@@ -364,10 +397,28 @@ const CATEGORY_IDS: Record<ToolCategory, string[]> = {
     "srt-edit",
     "frame",
     "gif",
+    "gif-to-video",
   ],
-  audio: ["video-to-mp3", "audio-trim", "audio-join", "audio-speed", "audio-convert", "recorder"],
+  audio: [
+    "video-to-mp3",
+    "audio-trim",
+    "audio-join",
+    "audio-speed",
+    "audio-convert",
+    "audio-volume",
+    "recorder",
+  ],
   image: ["image-compress", "image-edit", "image-metadata", "image-convert", "qr"],
-  pdf: ["image-pdf", "text-pdf", "pptx-pdf", "pdf-merge", "pdf-organize", "pdf-split", "pdf-image"],
+  pdf: [
+    "image-pdf",
+    "text-pdf",
+    "pptx-pdf",
+    "pdf-merge",
+    "pdf-organize",
+    "pdf-split",
+    "pdf-numbering",
+    "pdf-image",
+  ],
   docs: ["scanner", "zip", "zip-extract", "rename", "hash", "ocr", "batch"],
 };
 
