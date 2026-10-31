@@ -79,6 +79,26 @@ export async function readStoredBlob(
   return base64ToBlob(String(result.data), type);
 }
 
+/** Kalıcı dosyayı yalnızca gerektiğinde File olarak okur (mobilde bellek tasarrufu). */
+export async function readStoredFile(
+  path: string,
+  name: string,
+  type = "application/octet-stream",
+  lastModified = Date.now(),
+): Promise<File> {
+  const blob = await readStoredBlob(path, type);
+  return new File([blob], name, { type, lastModified });
+}
+
+/**
+ * Dosyanın cihazdaki file:// adresi. WebView bu adresi yerel sunucu üzerinden
+ * açar; böylece video/görsel belleğe kopyalanmadan, akış olarak oynatılır.
+ */
+export async function storedFileUri(path: string): Promise<string> {
+  const result = await Filesystem.getUri({ path, directory: DATA });
+  return result.uri;
+}
+
 export async function deleteStored(path: string): Promise<void> {
   try {
     await Filesystem.deleteFile({ path, directory: DATA });

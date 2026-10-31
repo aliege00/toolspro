@@ -28,7 +28,7 @@ type RepeatMode = "off" | "all" | "one";
 type Cue = { start: number; end: number; text: string };
 
 function posKey(entry: Entry): string {
-  return `medya.pos.${entry.file.name}:${entry.file.size}:${entry.file.lastModified}`;
+  return `medya.pos.${entry.file.name}:${entry.size}:${entry.file.lastModified}`;
 }
 
 function readPos(entry: Entry): number {

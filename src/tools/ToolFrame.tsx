@@ -4,10 +4,10 @@ import { Button, ProgressBar } from "@/components/ui";
 import { FileIcon, MusicIcon, TrashIcon, VideoIcon } from "@/components/Icons";
 import { formatBytes, pickFiles, replaceExt } from "@/lib/files";
 import type { Kind } from "@/lib/files";
-import { FFMPEG_WARN_BYTES } from "@/lib/ffmpeg";
+import { FFMPEG_WARN_BYTES, clearFFmpegFiles } from "@/lib/ffmpeg";
 import { useOutputs } from "@/lib/outputs";
 import type { Output } from "@/lib/outputs";
-import { useLibrary } from "@/lib/library";
+import { entryFile, useLibrary } from "@/lib/library";
 import { logError } from "@/lib/errorLog";
 import { saveBlob } from "@/lib/native";
 import { useT } from "@/i18n";
@@ -30,10 +30,15 @@ export function useToolFile(initialFileId?: string, accept?: string) {
   useEffect(() => {
     if (!initialFileId || appliedInitial.current === initialFileId) return;
     const entry = byId(initialFileId);
-    if (entry) {
-      appliedInitial.current = initialFileId;
-      setPicked({ file: entry.file, url: entry.url, fromLibraryId: entry.id });
-    }
+    if (!entry) return;
+    appliedInitial.current = initialFileId;
+    let alive = true;
+    void entryFile(entry).then((file) => {
+      if (alive) setPicked({ file, url: entry.url, fromLibraryId: entry.id });
+    });
+    return () => {
+      alive = false;
+    };
   }, [initialFileId, byId]);
 
   useEffect(
@@ -144,6 +149,10 @@ export function useRunner() {
         logError(tool, e);
         setError(e instanceof Error ? e.message : "İşlem tamamlanamadı.");
         setStatus("error");
+      } finally {
+        // Girdi/çıktı dosyaları sanal diskte kalırsa birkaç işten sonra bellek
+        // dolar ve sonraki araçlar çalışmaz. Her işin ardından temizle.
+        void clearFFmpegFiles();
       }
     },
     [addOutput],

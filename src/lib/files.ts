@@ -104,8 +104,42 @@ export function pickFiles(opts: PickOptions = {}): Promise<File[]> {
 
 let thumbCounter = 0;
 
-/** Videodan küçük kare üretir; üretilemezse null döner. */
-export function videoThumb(url: string, atSeconds = 1): Promise<string | null> {
+// Aynı anda birden çok video öğesi açmak Android WebView'de belleği
+// tüketip uygulamayı çökertiyordu. Küçük kareler sıraya alınır (en fazla 2).
+const THUMB_CONCURRENCY = 2;
+let thumbActive = 0;
+const thumbQueue: (() => void)[] = [];
+const thumbCache = new Map<string, string>();
+
+function acquireThumbSlot(): Promise<void> {
+  if (thumbActive < THUMB_CONCURRENCY) {
+    thumbActive += 1;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => thumbQueue.push(resolve));
+}
+
+function releaseThumbSlot(): void {
+  const next = thumbQueue.shift();
+  if (next) next();
+  else thumbActive = Math.max(0, thumbActive - 1);
+}
+
+/** Videodan küçük kare üretir; üretilemezse null döner. Sonuç önbelleğe alınır. */
+export async function videoThumb(url: string, atSeconds = 1): Promise<string | null> {
+  const cached = thumbCache.get(url);
+  if (cached) return cached;
+  await acquireThumbSlot();
+  try {
+    const data = await createVideoThumb(url, atSeconds);
+    if (data) thumbCache.set(url, data);
+    return data;
+  } finally {
+    releaseThumbSlot();
+  }
+}
+
+function createVideoThumb(url: string, atSeconds = 1): Promise<string | null> {
   return new Promise((resolve) => {
     const video = document.createElement("video");
     video.muted = true;

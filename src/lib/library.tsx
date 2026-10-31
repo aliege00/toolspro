@@ -1,14 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { Capacitor } from "@capacitor/core";
 import { detectKind, newId } from "./files";
 import type { Kind } from "./files";
+import { isNative } from "./native";
 import {
   deleteStored,
   extensionOf,
   loadLibraryIndex,
   persistBlob,
   readStoredBlob,
+  readStoredFile,
   saveLibraryIndex,
+  storedFileUri,
 } from "./storage";
 import type { LibraryIndex, PersistedEntry } from "./storage";
 
@@ -26,7 +30,18 @@ export type Entry = {
   path?: string;
   persisted?: boolean;
   trashedAt?: number;
+  /**
+   * Kalıcı dosyanın içeriğini gerektiğinde okur. Mobilde kitaplık açılışında
+   * dosyalar belleğe alınmaz; FFmpeg/hash gibi içerik isteyen işler bunu çağırır.
+   */
+  materialize?: () => Promise<File>;
 };
+
+/** Bir kütüphane kaydının gerçek dosyasını (gerekirse diskten okuyarak) döndürür. */
+export async function entryFile(entry: Entry): Promise<File> {
+  if (entry.materialize) return entry.materialize();
+  return entry.file;
+}
 
 export type Album = {
   id: string;
@@ -134,6 +149,11 @@ type LibraryCtx = {
 
 const Ctx = createContext<LibraryCtx | null>(null);
 
+/** Yalnızca blob adreslerini bırak; yerel sunucu adresleri kendiliğinden geçerlidir. */
+function releaseUrl(url: string): void {
+  if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+}
+
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [trashed, setTrashed] = useState<Entry[]>([]);
@@ -169,33 +189,68 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     const urls: string[] = [];
 
     const loadOne = async (record: PersistedEntry): Promise<Entry | null> => {
-      try {
-        const blob = await readStoredBlob(record.path, record.type);
-        const file = new File([blob], record.name, {
-          type: record.type,
-          lastModified: record.lastModified,
-        });
-        const url = URL.createObjectURL(file);
-        urls.push(url);
-        objectUrls.current.add(url);
-        seen.current.add(record.key);
-        return {
-          id: record.id,
-          key: record.key,
-          file,
-          url,
-          kind: record.kind,
-          name: record.name,
-          size: record.size || file.size,
-          folder: record.folder,
-          addedAt: record.addedAt,
-          path: record.path,
-          persisted: true,
-          trashedAt: record.deletedAt,
-        };
-      } catch {
-        return null;
+      let file: File | null = null;
+      let url = "";
+      let materialize: (() => Promise<File>) | undefined;
+
+      if (isNative()) {
+        // Dosya içeriği belleğe alınmaz: video/görsel yerel sunucudan akar.
+        // Böylece çok sayıda büyük video kitaplık açılışında belleği doldurmaz.
+        try {
+          const uri = await storedFileUri(record.path);
+          url = Capacitor.convertFileSrc(uri);
+          file = new File([], record.name, {
+            type: record.type,
+            lastModified: record.lastModified,
+          });
+          let cached: File | null = null;
+          materialize = async () => {
+            if (!cached) {
+              cached = await readStoredFile(
+                record.path,
+                record.name,
+                record.type,
+                record.lastModified,
+              );
+            }
+            return cached;
+          };
+        } catch {
+          // Yerel adres alınamadı; aşağıda blob yolu denenir.
+        }
       }
+
+      if (!file) {
+        try {
+          const blob = await readStoredBlob(record.path, record.type);
+          file = new File([blob], record.name, {
+            type: record.type,
+            lastModified: record.lastModified,
+          });
+          url = URL.createObjectURL(file);
+          urls.push(url);
+          objectUrls.current.add(url);
+        } catch {
+          return null;
+        }
+      }
+
+      seen.current.add(record.key);
+      return {
+        id: record.id,
+        key: record.key,
+        file,
+        url,
+        materialize,
+        kind: record.kind,
+        name: record.name,
+        size: record.size || file.size,
+        folder: record.folder,
+        addedAt: record.addedAt,
+        path: record.path,
+        persisted: true,
+        trashedAt: record.deletedAt,
+      };
     };
 
     void (async () => {
@@ -309,7 +364,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     const expired = trashedRef.current.filter((entry) => (entry.trashedAt ?? 0) < cutoff);
     if (expired.length === 0) return;
     for (const entry of expired) {
-      URL.revokeObjectURL(entry.url);
+      releaseUrl(entry.url);
       seen.current.delete(entry.key);
       if (entry.path) void deleteStored(entry.path);
     }
@@ -350,7 +405,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       freshKeys.has(entry.key),
     );
     for (const duplicate of duplicatesInTrash) {
-      URL.revokeObjectURL(duplicate.url);
+      releaseUrl(duplicate.url);
       if (duplicate.path) void deleteStored(duplicate.path);
     }
     if (duplicatesInTrash.length > 0) {
@@ -401,7 +456,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const remove = useCallback((id: string) => {
     const target = entriesRef.current.find((entry) => entry.id === id);
     if (!target) return;
-    URL.revokeObjectURL(target.url);
+    releaseUrl(target.url);
     seen.current.delete(target.key);
     setEntries((prev) => prev.filter((entry) => entry.id !== id));
     if (target.path) void deleteStored(target.path);
@@ -430,7 +485,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const purgeTrash = useCallback(() => {
     const targets = trashedRef.current;
     for (const entry of targets) {
-      URL.revokeObjectURL(entry.url);
+      releaseUrl(entry.url);
       seen.current.delete(entry.key);
       if (entry.path) void deleteStored(entry.path);
     }

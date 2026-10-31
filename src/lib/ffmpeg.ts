@@ -20,9 +20,15 @@ export function isFFmpegCancelled(error: unknown): boolean {
   );
 }
 
+/** Mobilde ilk yükleme yavaş olabilir; bu süre aşılırsa net hata gösterilir. */
+const LOAD_TIMEOUT_MS = 60_000;
+
 /**
  * FFmpeg.wasm'ı yalnızca bir kez, yerel paketlenmiş çekirdekle yükler.
  * Dosya public/ffmpeg/ altından gelir (scripts/prepare-assets.mjs kopyalar).
+ *
+ * Yükleme mobilde uzarsa ya da worker hiç açılmazsa 60 saniye sonra net bir
+ * hatayla düşer; aksi hâlde araç "çalışıyor" görünüp sonsuza kadar beklerdi.
  */
 export function getFFmpeg(): Promise<FFmpeg> {
   if (instance) return Promise.resolve(instance);
@@ -31,10 +37,38 @@ export function getFFmpeg(): Promise<FFmpeg> {
       const { FFmpeg: FFmpegClass } = await import("@ffmpeg/ffmpeg");
       const ffmpeg = new FFmpegClass();
       const base = import.meta.env.BASE_URL;
-      await ffmpeg.load({
-        coreURL: `${base}ffmpeg/ffmpeg-core.js`,
-        wasmURL: `${base}ffmpeg/ffmpeg-core.wasm`,
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(
+            new Error(
+              "Video motoru zaman aşımına uğradı. Ayarlar → Tanılama bölümünden FFmpeg testini çalıştırın.",
+            ),
+          );
+        }, LOAD_TIMEOUT_MS);
       });
+      try {
+        await Promise.race([
+          ffmpeg.load({
+            coreURL: `${base}ffmpeg/ffmpeg-core.js`,
+            wasmURL: `${base}ffmpeg/ffmpeg-core.wasm`,
+          }),
+          timeout,
+        ]);
+      } catch (error) {
+        try {
+          ffmpeg.terminate();
+        } catch {
+          // Worker hiç başlamamış olabilir.
+        }
+        throw error instanceof Error && error.message.includes("zaman aşımı")
+          ? error
+          : new Error(
+              "Video motoru yüklenemedi. Uygulamayı yeniden açın; sorun sürerse Ayarlar → Tanılama bölümünden FFmpeg testini çalıştırın.",
+            );
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
       instance = ffmpeg;
       return ffmpeg;
     })().catch((error) => {
@@ -43,6 +77,33 @@ export function getFFmpeg(): Promise<FFmpeg> {
     });
   }
   return loading;
+}
+
+/** Yüklenmiş FFmpeg örneği var mı? (temizlik çağrısını gereksiz yere yükleme yapmamak için) */
+export function isFFmpegLoaded(): boolean {
+  return instance !== null;
+}
+
+/**
+ * FFmpeg'in sanal dosya sisteminde kalan geçici dosyaları siler.
+ * Araçlar her çalışmada yeni dosya yazar; temizlenmezse bellek şişer ve
+ * sonraki araçlar "çalışmıyor" gibi davranır.
+ */
+export async function clearFFmpegFiles(): Promise<void> {
+  const current = instance;
+  if (!current) return;
+  try {
+    const entries = await current.listDir("/");
+    await Promise.all(
+      entries
+        .filter((entry) => !entry.isDir)
+        .map((entry) =>
+          current.deleteFile(`/${entry.name}`).catch(() => undefined),
+        ),
+    );
+  } catch {
+    // Liste alınamıyorsa worker meşgul/zombi olabilir; sonraki çağrı temiz başlar.
+  }
 }
 
 /**
@@ -93,6 +154,9 @@ export async function execFFmpeg(
     return code;
   } catch (error) {
     if (signal?.aborted) throw new FFmpegCancelledError();
+    // Bozulan bir worker sonraki tüm araçları da düşürür. Örneği kapat ki
+    // bir sonraki deneme temiz bir worker ile başlasın.
+    cancelFFmpeg();
     throw error;
   } finally {
     ffmpeg.off("progress", onProgressEvent);

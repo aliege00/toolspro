@@ -32,7 +32,7 @@ import { formatDate, formatBytes, pickFiles } from "@/lib/files";
 import { useBackHandler } from "@/lib/back";
 import type { Kind } from "@/lib/files";
 import type { Entry } from "@/lib/library";
-import { useLibrary } from "@/lib/library";
+import { entryFile, useLibrary } from "@/lib/library";
 import { useNav } from "@/lib/nav";
 import { useI18n, useT } from "@/i18n";
 import { sha256Hex } from "@/lib/media";
@@ -1005,7 +1005,7 @@ function DuplicatesSheet({
     for (const entry of targets) {
       if (cancelRef.current) break;
       try {
-        const hash = await sha256Hex(entry.file, () => undefined);
+        const hash = await sha256Hex(await entryFile(entry), () => undefined);
         const list = map.get(hash);
         if (list) list.push(entry);
         else map.set(hash, [entry]);
@@ -1142,7 +1142,7 @@ function FileSheet({ entry, onClose }: { entry: Entry | null; onClose: () => voi
     setBusy(true);
     setError(null);
     try {
-      const result = await sha256Hex(entry.file, setProgress);
+      const result = await sha256Hex(await entryFile(entry), setProgress);
       setHash(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : "—");

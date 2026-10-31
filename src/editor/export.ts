@@ -9,6 +9,7 @@ import {
 } from "@/lib/ffmpeg";
 import { extensionOf } from "@/lib/storage";
 import type { Entry } from "@/lib/library";
+import { entryFile } from "@/lib/library";
 import type { Clip, ExportQuality, Project } from "./types";
 import {
   aspectSize,
@@ -108,7 +109,7 @@ async function writeSources(
     if (signal?.aborted) throw new FFmpegCancelledError();
     const extension = ffmpegExtension(entry.name) || extensionOf(entry.name);
     const fileName = `src_${index}.${extension.replace(/[^a-z0-9]/gi, "") || "bin"}`;
-    const data = await fetchFile(entry.file);
+    const data = await fetchFile(await entryFile(entry));
     await ffmpeg.writeFile(fileName, data);
     const hasAudio =
       entry.kind === "video" ? await probeAudio(ffmpeg, fileName, signal) : false;
