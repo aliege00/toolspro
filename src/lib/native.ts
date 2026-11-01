@@ -1,8 +1,9 @@
 import { Capacitor, registerPlugin } from "@capacitor/core";
 import type { PluginListenerHandle } from "@capacitor/core";
-import { Directory, Filesystem } from "@capacitor/filesystem";
+import { Directory } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { triggerDownload } from "./files";
+import { writeBlobFile } from "./storage";
 
 type PermissionsApi = {
   request: () => Promise<{ granted: boolean }>;
@@ -155,28 +156,10 @@ export async function requestNotificationAccess(): Promise<boolean> {
   }
 }
 
-async function blobToBase64(blob: Blob): Promise<string> {
-  const buffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 0x8000;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-  }
-  return btoa(binary);
-}
-
 export type SaveResult = "shared" | "downloaded" | "failed";
 
 async function writeCache(blob: Blob, fileName: string): Promise<string> {
-  const data = await blobToBase64(blob);
-  const written = await Filesystem.writeFile({
-    path: `medya/${fileName}`,
-    data,
-    directory: Directory.Cache,
-    recursive: true,
-  });
-  return written.uri;
+  return writeBlobFile(`medya/${fileName}`, blob, Directory.Cache);
 }
 
 /** Videoyu doğrudan galeriye kaydeder (tarayıcıda indirir). */
@@ -228,21 +211,14 @@ export async function saveBlob(blob: Blob, fileName: string): Promise<SaveResult
     return "downloaded";
   }
 
-  let data: string;
   try {
-    data = await blobToBase64(blob);
-    const written = await Filesystem.writeFile({
-      path: `medya/${fileName}`,
-      data,
-      directory: Directory.Cache,
-      recursive: true,
-    });
+    const uri = await writeCache(blob, fileName);
 
     try {
       await Share.share({
         title: fileName,
         dialogTitle: "Dosyayı kaydet",
-        files: [written.uri],
+        files: [uri],
       });
       return "shared";
     } catch {
@@ -253,11 +229,7 @@ export async function saveBlob(blob: Blob, fileName: string): Promise<SaveResult
   }
 
   try {
-    await Filesystem.writeFile({
-      path: fileName,
-      data,
-      directory: Directory.Documents,
-    });
+    await writeBlobFile(fileName, blob, Directory.Documents);
     return "shared";
   } catch {
     // Tarayıcı (WebView) blob indirmesini dosya yöneticisine yazamaz;

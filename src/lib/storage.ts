@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 
 /**
@@ -12,6 +13,14 @@ export const ASSET_DIR = `${STORAGE_ROOT}/assets`;
 const INDEX_FILE = `${STORAGE_ROOT}/library.json`;
 
 const DATA = Directory.Data;
+
+/**
+ * Capacitor köprüsü JS→Java mesajını tek bir JSON dizesi olarak çözer.
+ * Büyük dosyayı tek parça göndermek (ör. 120 MB video → 160 MB base64)
+ * Android tarafında OutOfMemoryError'a yol açar. Bu yüzden dosyalar
+ * köprü için güvenli boyutta parçalara bölünür.
+ */
+const BRIDGE_CHUNK = 4 * 1024 * 1024;
 
 function safeSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -53,27 +62,114 @@ export function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+/**
+ * Blob'u parça parça yazar. Her parça birkaç MB'lık base64 olduğu için
+ * Android köprüsü tek seferde yüzlerce MB ayırmak zorunda kalmaz.
+ * Yazma yarıda kalırsa geride bozuk dosya bırakmaz.
+ */
+export async function writeBlobFile(
+  path: string,
+  blob: Blob,
+  directory = DATA,
+): Promise<string> {
+  if (Capacitor.getPlatform() === "web") {
+    const written = await Filesystem.writeFile({
+      path,
+      data: blob,
+      directory,
+      recursive: true,
+    });
+    return written.uri;
+  }
+
+  try {
+    if (blob.size === 0) {
+      const written = await Filesystem.writeFile({
+        path,
+        data: "",
+        directory,
+        recursive: true,
+        encoding: Encoding.UTF8,
+      });
+      return written.uri;
+    }
+
+    let firstUri = "";
+    for (let offset = 0; offset < blob.size; offset += BRIDGE_CHUNK) {
+      const chunk = blob.slice(offset, Math.min(offset + BRIDGE_CHUNK, blob.size));
+      const data = await blobToBase64(chunk);
+      if (offset === 0) {
+        const written = await Filesystem.writeFile({
+          path,
+          data,
+          directory,
+          recursive: true,
+        });
+        firstUri = written.uri;
+      } else {
+        await Filesystem.appendFile({ path, data, directory });
+      }
+    }
+    return firstUri;
+  } catch (error) {
+    try {
+      await Filesystem.deleteFile({ path, directory });
+    } catch {
+      // Yarım dosya zaten yoksa yoksay.
+    }
+    throw error;
+  }
+}
+
 /** Dosyayı özel depoya yazar ve kalıcı yolunu döndürür. */
 export async function persistBlob(
   blob: Blob,
   fileName: string,
   directory = LIBRARY_DIR,
 ): Promise<string> {
-  const data = await blobToBase64(blob);
   const path = `${directory}/${safeSegment(fileName)}`;
-  await Filesystem.writeFile({
-    path,
-    data,
-    directory: DATA,
-    recursive: true,
-  });
+  await writeBlobFile(path, blob, DATA);
   return path;
 }
 
+/**
+ * Dosyayı köprüyü tıkamadan okur. Yerelde dosya parça parça okunur;
+ * tek seferlik base64 okuması büyük videolarda Java tarafını da şişirir.
+ */
 export async function readStoredBlob(
   path: string,
   type = "application/octet-stream",
 ): Promise<Blob> {
+  if (Capacitor.getPlatform() !== "web") {
+    try {
+      const info = await Filesystem.stat({ path, directory: DATA });
+      const size = info.size;
+      if (size > 0) {
+        const parts: BlobPart[] = [];
+        let offset = 0;
+        while (offset < size) {
+          const length = Math.min(BRIDGE_CHUNK, size - offset);
+          const result = await Filesystem.readFile({
+            path,
+            directory: DATA,
+            offset,
+            length,
+          });
+          if (typeof result.data !== "string") return result.data;
+          const bytes = base64ToBytes(result.data);
+          // Eklenti offset'i yok sayarsa tüm dosyayı tekrar okumaya çalışma.
+          if (bytes.length === 0 || bytes.length > length) break;
+          parts.push(bytes);
+          offset += bytes.length;
+          if (bytes.length < length) break;
+        }
+        if (parts.length > 0) return new Blob(parts, { type });
+      }
+    } catch {
+      // Parçalı okuma desteklenmiyorsa aşağıdaki tek okumaya düş.
+    }
+  }
+
   const result = await Filesystem.readFile({ path, directory: DATA });
   if (result.data instanceof Blob) return result.data;
   return base64ToBlob(String(result.data), type);

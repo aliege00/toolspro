@@ -4,13 +4,12 @@ import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 import { strFromU8, unzipSync } from "fflate";
 import {
   PACK_DIR,
-  base64ToBytes,
-  bytesToBase64,
   deleteStored,
   listDirectories,
   persistBlob,
   readJson,
   readStoredBlob,
+  writeBlobFile,
 } from "@/lib/storage";
 import type { CatalogPack, InstalledPack, PackContent, PackItem } from "./types";
 import { PackError } from "./types";
@@ -150,9 +149,8 @@ async function downloadNative(
 }
 
 async function readZipBytes(path: string): Promise<Uint8Array> {
-  const result = await Filesystem.readFile({ path, directory: DATA });
-  if (typeof result.data === "string") return base64ToBytes(result.data);
-  return new Uint8Array(await result.data.arrayBuffer());
+  const blob = await readStoredBlob(path, "application/zip");
+  return new Uint8Array(await blob.arrayBuffer());
 }
 
 async function removePackDir(packId: string): Promise<void> {
@@ -258,12 +256,10 @@ export async function installPack(
         directory: DATA,
         recursive: true,
       });
-      await Filesystem.writeFile({
-        path: `${packDir(pack.id)}/${name}`,
-        data: bytesToBase64(entries[rawName]),
-        directory: DATA,
-        recursive: true,
-      });
+      const bytes = entries[rawName];
+      const copy = new Uint8Array(bytes.byteLength);
+      copy.set(bytes);
+      await writeBlobFile(`${packDir(pack.id)}/${name}`, new Blob([copy]));
     }
 
     const installedAt = Date.now();
