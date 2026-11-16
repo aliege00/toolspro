@@ -10,7 +10,7 @@ import {
   ToolSection,
   useRunner,
 } from "./ToolFrame";
-import { concatAudioBuffers, decodeToAudioBuffer, encodeMp3 } from "@/lib/media";
+import { concatAudioBuffers, decodeMediaFile, encodeMp3 } from "@/lib/media";
 import { useT } from "@/i18n";
 
 export default function AudioJoin() {
@@ -45,7 +45,11 @@ export default function AudioJoin() {
       const buffers: AudioBuffer[] = [];
       for (let i = 0; i < files.length; i += 1) {
         if (signal.aborted) break;
-        const buffer = await decodeToAudioBuffer(files[i]);
+        const buffer = await decodeMediaFile(
+          files[i],
+          (ratio) => onProgress(0.05 + ((i + ratio) / files.length) * 0.4),
+          signal,
+        );
         buffers.push(buffer);
         onProgress(0.05 + ((i + 1) / files.length) * 0.4);
       }

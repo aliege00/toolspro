@@ -64,6 +64,9 @@ const tr = {
   addText: "Metin Ekle",
   timeline: "Zaman çizelgesi",
   preview: "Önizleme",
+  previewEmpty: "Zaman çizelgesi henüz boş",
+  previewEmptyDesc:
+    "Video veya fotoğraf ekle; kırp, böl, hızlandır ve dışa aktar. Her şey cihazında kalır.",
   zoomOut: "Uzaklaştır",
   zoomIn: "Yakınlaştır",
   fitView: "Sığdır",
@@ -239,6 +242,9 @@ const en: Record<EditorKey, string> = {
   addText: "Add Text",
   timeline: "Timeline",
   preview: "Preview",
+  previewEmpty: "Your timeline is empty",
+  previewEmptyDesc:
+    "Add a video or photo, then trim, split, change speed and export. Everything stays on your device.",
   zoomOut: "Zoom out",
   zoomIn: "Zoom in",
   fitView: "Fit",

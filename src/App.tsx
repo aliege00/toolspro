@@ -7,6 +7,7 @@ import { LaunchScreen } from "@/components/Brand";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AudioMiniPlayer, AudioPlayerSheet } from "@/components/AudioPlayer";
 import { AudioProvider, useAudioActive } from "@/lib/audio";
+import { PowerProvider, usePowerSaver } from "@/lib/power";
 import { ThemeProvider } from "@/lib/theme";
 import { LocaleProvider } from "@/i18n";
 import { LibraryProvider } from "@/lib/library";
@@ -119,7 +120,8 @@ function Gate() {
   );
 }
 
-export default function App() {
+function AppFrame() {
+  const { saver } = usePowerSaver();
   const [launching, setLaunching] = useState(true);
 
   useEffect(() => {
@@ -130,7 +132,7 @@ export default function App() {
   useEffect(() => installGlobalErrorLogging(), []);
 
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionConfig reducedMotion={saver ? "always" : "user"}>
       <LocaleProvider>
         <AudioProvider>
           <ThemeProvider>
@@ -150,5 +152,13 @@ export default function App() {
         </AudioProvider>
       </LocaleProvider>
     </MotionConfig>
+  );
+}
+
+export default function App() {
+  return (
+    <PowerProvider>
+      <AppFrame />
+    </PowerProvider>
   );
 }

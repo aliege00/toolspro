@@ -63,37 +63,94 @@ export default function VideoJoin() {
         const name = `part${i}.${ext}`;
         await ffmpeg.writeFile(name, await fetchFile(files[i]));
         written.push(name);
-        onProgress(0.05 + ((i + 1) / files.length) * 0.3);
+        onProgress(0.03 + ((i + 1) / files.length) * 0.22);
       }
       assertFFmpegAlive(signal);
 
-      const list = `ffconcat version 1.0\n${written
-        .map((name) => `file '${name}'`)
-        .join("\n")}\n`;
-      await ffmpeg.writeFile("list.txt", new TextEncoder().encode(list));
+      const concat = async (
+        names: string[],
+        output: string,
+        from: number,
+        span: number,
+      ): Promise<boolean> => {
+        const list = `ffconcat version 1.0\n${names
+          .map((name) => `file '${name}'`)
+          .join("\n")}\n`;
+        await ffmpeg.writeFile("list.txt", new TextEncoder().encode(list));
+        try {
+          const code = await execFFmpeg(
+            ffmpeg,
+            ["-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", output],
+            { signal, onProgress: (ratio) => onProgress(from + ratio * span) },
+          );
+          return code === 0;
+        } catch (error) {
+          if (signal.aborted) throw error;
+          return false;
+        }
+      };
 
       const outExt = ffmpegExtension(files[0].name);
-      const outputName = `joined.${outExt}`;
-      try {
-        const code = await execFFmpeg(
-          ffmpeg,
-          ["-f", "concat", "-safe", "0", "-i", "list.txt", "-c", "copy", outputName],
-          { signal, onProgress: (ratio) => onProgress(0.4 + ratio * 0.55) },
-        );
-        if (code !== 0) throw new Error(`ffmpeg exit ${code}`);
-      } catch (e) {
-        if (signal.aborted) throw e;
-        throw new Error(t("videoJoin.error"));
+      let outputName = `joined.${outExt}`;
+      // 1) Kodekler uyumluysa hızlı ve kayıpsız birleştirme.
+      let ok = await concat(written, outputName, 0.26, 0.6);
+
+      // 2) Farklı çözünürlük/kodeklerde concat copy başarısız olur. Her girişi
+      //    720p/30 fps H.264 + AAC'ye normalize edip yeniden birleştir.
+      if (!ok) {
+        assertFFmpegAlive(signal);
+        const normalized: string[] = [];
+        for (let i = 0; i < written.length; i += 1) {
+          assertFFmpegAlive(signal);
+          const name = `norm${i}.mp4`;
+          const code = await execFFmpeg(
+            ffmpeg,
+            [
+              "-i",
+              written[i],
+              "-vf",
+              "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30",
+              "-c:v",
+              "libx264",
+              "-preset",
+              "ultrafast",
+              "-crf",
+              "23",
+              "-pix_fmt",
+              "yuv420p",
+              "-c:a",
+              "aac",
+              "-b:a",
+              "128k",
+              "-ar",
+              "44100",
+              "-ac",
+              "2",
+              name,
+            ],
+            {
+              signal,
+              onProgress: (ratio) => onProgress(0.26 + ((i + ratio) / written.length) * 0.42),
+            },
+          );
+          if (code !== 0) throw new Error(t("videoJoin.error"));
+          normalized.push(name);
+        }
+        outputName = "joined-normalized.mp4";
+        ok = await concat(normalized, outputName, 0.68, 0.28);
       }
+
+      if (!ok) throw new Error(t("videoJoin.error"));
 
       assertFFmpegAlive(signal);
       const data = await ffmpeg.readFile(outputName);
       const bytes =
         data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
       onProgress(1);
+      const finalExt = outputName.split(".").pop() ?? "mp4";
       return {
-        blob: new Blob([bytes as unknown as BlobPart], { type: mimeForExt(outExt) }),
-        name: `birlestirilmis.${outExt}`,
+        blob: new Blob([bytes as unknown as BlobPart], { type: mimeForExt(finalExt) }),
+        name: `birlestirilmis.${finalExt}`,
       };
     });
   };

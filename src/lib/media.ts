@@ -30,6 +30,69 @@ export async function decodeToAudioBuffer(file: File): Promise<AudioBuffer> {
   }
 }
 
+/**
+ * Ses/video dosyasını PCM'e çözer. WebAudio, video dosyalarının ses izini
+ * çoğu Android WebView'da açamadığı için başarısız olursa FFmpeg ile sesi
+ * ayırıp yeniden dener. Video → MP3 gibi araçların asıl kırılma noktası buydu.
+ */
+export async function decodeMediaFile(
+  file: File,
+  onProgress?: (ratio: number) => void,
+  signal?: AbortSignal,
+): Promise<AudioBuffer> {
+  try {
+    return await decodeToAudioBuffer(file);
+  } catch (directError) {
+    if (signal?.aborted) throw new DOMException("İşlem iptal edildi.", "AbortError");
+    // Ses dosyalarında da cihaz çözücüsü yetersiz olabilir (m4a/opus/amr);
+    // FFmpeg ile PCM'e çevirmek bu araçları kurtarır.
+
+    const { execFFmpeg, ffmpegExtension, getFFmpeg } = await import("@/lib/ffmpeg");
+    const { fetchFile } = await import("@ffmpeg/util");
+    const ffmpeg = await getFFmpeg();
+    const stamp = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+    const input = `audio-in-${stamp}.${ffmpegExtension(file.name)}`;
+    const output = `audio-out-${stamp}.wav`;
+    try {
+      await ffmpeg.writeFile(input, await fetchFile(file));
+      onProgress?.(0.12);
+      const code = await execFFmpeg(
+        ffmpeg,
+        [
+          "-i",
+          input,
+          "-vn",
+          "-ac",
+          "2",
+          "-ar",
+          "44100",
+          "-c:a",
+          "pcm_s16le",
+          output,
+        ],
+        {
+          signal,
+          onProgress: (ratio) => onProgress?.(0.12 + ratio * 0.5),
+        },
+      );
+      if (code !== 0) throw new Error("ffmpeg");
+      const data = await ffmpeg.readFile(output);
+      const bytes =
+        data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
+      return await decodeToAudioBuffer(
+        new File([bytes as unknown as BlobPart], "audio.wav", { type: "audio/wav" }),
+      );
+    } catch (error) {
+      if (signal?.aborted) throw new DOMException("İşlem iptal edildi.", "AbortError");
+      // FFmpeg de başaramadıysa kullanıcıya en anlaşılır mesajı göster.
+      throw directError instanceof Error ? directError : error;
+    } finally {
+      await ffmpeg.deleteFile(input).catch(() => undefined);
+      await ffmpeg.deleteFile(output).catch(() => undefined);
+    }
+  }
+}
+
 /** lamejs yalnızca belirli örnekleme oranlarını destekler; gerekirse yeniden örnekler. */
 async function ensureMp3SampleRate(buffer: AudioBuffer): Promise<AudioBuffer> {
   if (MP3_RATES.includes(buffer.sampleRate)) return buffer;
@@ -366,24 +429,45 @@ export async function captureFrame(
   video.preload = "auto";
   video.src = url;
 
-  await new Promise<void>((resolve, reject) => {
-    const timer = window.setTimeout(() => reject(new Error("timeout")), 15000);
-    video.onloadeddata = () => {
-      window.clearTimeout(timer);
-      resolve();
-    };
-    video.onerror = () => {
-      window.clearTimeout(timer);
-      reject(new Error("load"));
-    };
-  });
-
-  await new Promise<void>((resolve) => {
-    video.onseeked = () => resolve();
-    video.currentTime = Math.max(0, time);
-  });
-
   try {
+    await new Promise<void>((resolve, reject) => {
+      const timer = window.setTimeout(() => reject(new Error("timeout")), 15000);
+      video.onloadeddata = () => {
+        window.clearTimeout(timer);
+        resolve();
+      };
+      video.onerror = () => {
+        window.clearTimeout(timer);
+        reject(new Error("load"));
+      };
+    });
+
+    const target = Math.max(0, time);
+    // 0. saniyedeki kare zaten hazır; burada `seeked` beklemek bazı
+    // WebView'larda hiç bitmeyen bir beklemeye dönüşüyordu.
+    if (Math.abs(video.currentTime - target) > 0.02) {
+      await new Promise<void>((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          window.clearTimeout(timer);
+          video.removeEventListener("seeked", finish);
+          video.removeEventListener("error", finish);
+          resolve();
+        };
+        // Bozuk bir karede olay gelmezse 5 sn sonra elimizdeki kareyle devam et.
+        const timer = window.setTimeout(finish, 5000);
+        video.addEventListener("seeked", finish);
+        video.addEventListener("error", finish);
+        try {
+          video.currentTime = target;
+        } catch {
+          finish();
+        }
+      });
+    }
+
     const width = video.videoWidth;
     const height = video.videoHeight;
     if (!width || !height) throw new Error("size");
@@ -399,6 +483,8 @@ export async function captureFrame(
     if (!blob) throw new Error("encode");
     return { blob, width, height };
   } finally {
+    video.onloadeddata = null;
+    video.onerror = null;
     video.removeAttribute("src");
     video.load();
   }

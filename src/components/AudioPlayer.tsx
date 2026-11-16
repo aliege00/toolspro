@@ -37,7 +37,7 @@ export function AudioMiniPlayer() {
           exit={{ y: 84, opacity: 0 }}
           transition={{ type: "spring", stiffness: 360, damping: 32 }}
           style={{ bottom: "max(10px, env(safe-area-inset-bottom))" }}
-          className="fixed inset-x-3 z-40 flex items-center gap-1 overflow-hidden rounded-[18px] border border-white/5 bg-card2/95 pr-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.22)] backdrop-blur-xl"
+          className="fixed inset-x-3 z-40 flex items-center gap-1 overflow-hidden rounded-[18px] border border-line bg-card2 pr-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.22)]"
         >
           <motion.span
             aria-hidden
@@ -117,14 +117,7 @@ export function AudioPlayerSheet() {
               transition={{ type: "spring", stiffness: 260, damping: 24 }}
               className="relative flex h-[170px] w-[170px] items-center justify-center overflow-hidden rounded-[28px] border border-white/5 bg-fill shadow-[var(--shadow-card)]"
             >
-              <motion.div
-                animate={playing ? { scale: [1, 1.035, 1] } : { scale: 1 }}
-                transition={
-                  playing
-                    ? { duration: 4, repeat: Infinity, ease: "easeInOut" }
-                    : { duration: 0.3 }
-                }
-              >
+              <motion.div animate={{ scale: 1 }}>
                 <BeyToolMark size={84} radius={20} />
               </motion.div>
               <span className="absolute right-3 bottom-3 text-ink3">
@@ -239,17 +232,11 @@ export function AudioPlayerSheet() {
                       </span>
                       {active && playing && (
                         <span className="flex items-end gap-[2px] text-ink2" aria-hidden>
-                          {[0, 1, 2].map((bar) => (
-                            <motion.span
+                          {[6, 11, 8].map((height, bar) => (
+                            <span
                               key={bar}
                               className="w-[2.5px] rounded-full bg-ink2"
-                              animate={{ height: [5, 12, 7] }}
-                              transition={{
-                                duration: 0.9 + bar * 0.18,
-                                repeat: Infinity,
-                                repeatType: "mirror",
-                                ease: "easeInOut",
-                              }}
+                              style={{ height }}
                             />
                           ))}
                         </span>

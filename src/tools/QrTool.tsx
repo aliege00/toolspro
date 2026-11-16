@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import jsQR from "jsqr";
 import QRCode from "qrcode";
@@ -25,16 +25,26 @@ export default function QrTool() {
   const rafRef = useRef<number | undefined>(undefined);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const stopCamera = () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+  const stopCamera = useCallback(() => {
+    if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current);
     rafRef.current = undefined;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     setCameraOn(false);
-  };
+  }, []);
 
-  useEffect(() => () => stopCamera(), []);
+  // Kamera arka planda açık kalırsa pil ve gizlilik açısından kötüdür.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") stopCamera();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      stopCamera();
+    };
+  }, [stopCamera]);
 
   const generate = async () => {
     const value = text.trim();
@@ -85,6 +95,8 @@ export default function QrTool() {
       setScanError(t("qr.cameraError"));
       return;
     }
+    // Önceki akış açık kaldıysa kamerayı iki kez meşgul etme.
+    stopCamera();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
@@ -101,12 +113,21 @@ export default function QrTool() {
 
       const canvas = canvasRef.current ?? document.createElement("canvas");
       canvasRef.current = canvas;
+      let lastScan = 0;
 
-      const tick = () => {
+      const tick = (now: number) => {
         if (!streamRef.current) return;
+        // Saniyede ~4 tarama yeterli: her karede tam çözünürlükte
+        // getImageData + jsQR çalıştırmak CPU'yu ve pili tüketiyordu.
+        if (now - lastScan < 250) {
+          rafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+        lastScan = now;
         if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
+          const scale = Math.min(1, 640 / Math.max(video.videoWidth, video.videoHeight));
+          canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+          canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
           const ctx = canvas.getContext("2d", { willReadFrequently: true });
           if (ctx) {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);

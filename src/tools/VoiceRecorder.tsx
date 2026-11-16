@@ -119,8 +119,7 @@ export default function VoiceRecorder() {
             }`}
           >
             <motion.span
-              animate={recording ? { scale: [1, 1.12, 1] } : { scale: 1 }}
-              transition={recording ? { repeat: Infinity, duration: 1.4 } : undefined}
+              animate={{ scale: 1 }}
               className={
                 recording
                   ? "h-9 w-9 rounded-[10px] bg-danger"

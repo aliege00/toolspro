@@ -11,7 +11,13 @@ import {
   useToolFile,
 } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
-import { decodeToAudioBuffer, encodeMp3, encodeWav, sliceBuffer } from "@/lib/media";
+import {
+  decodeMediaFile,
+  encodeMp3,
+  encodeWav,
+  readVideoMeta,
+  sliceBuffer,
+} from "@/lib/media";
 import { useT } from "@/i18n";
 
 export default function AudioTrim({ initialFileId }: ToolProps) {
@@ -21,7 +27,7 @@ export default function AudioTrim({ initialFileId }: ToolProps) {
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(0);
   const [format, setFormat] = useState<"mp3" | "wav">("mp3");
-  const { status, progress, error, result, run } = useRunner();
+  const { status, progress, error, result, run, cancel } = useRunner();
 
   useEffect(() => {
     setDuration(0);
@@ -29,41 +35,39 @@ export default function AudioTrim({ initialFileId }: ToolProps) {
     setEnd(0);
     if (!picked) return;
 
-    const media = document.createElement("audio");
-    media.preload = "metadata";
-    media.src = picked.url;
+    // <audio> öğesi video dosyalarının süresini okumuyordu; video öğesi hem
+    // ses hem video dosyalarında güvenilir çalışır.
+    let alive = true;
+    void readVideoMeta(picked.file)
+      .then((meta) => {
+        if (!alive) return;
+        const total = Number.isFinite(meta.duration) ? meta.duration : 0;
+        setDuration(total);
+        setEnd(total);
+      })
+      .catch(() => {
+        if (alive) setDuration(0);
+      });
 
-    const timer = window.setTimeout(() => {
-      media.removeAttribute("src");
-      media.load();
-    }, 12000);
-
-    media.onloadedmetadata = () => {
-      window.clearTimeout(timer);
-      const total = media.duration || 0;
-      setDuration(total);
-      setEnd(total);
-      media.removeAttribute("src");
-      media.load();
+    return () => {
+      alive = false;
     };
-    media.onerror = () => {
-      window.clearTimeout(timer);
-      media.removeAttribute("src");
-      media.load();
-    };
-
-    return () => window.clearTimeout(timer);
   }, [picked]);
 
   const trimDuration = Math.max(0, end - start);
 
   const startRun = () => {
     if (!picked) return;
-    void run("Ses Kırp", async (onProgress) => {
-      const buffer = await decodeToAudioBuffer(picked.file);
-      onProgress(0.2);
+    void run("Ses Kırp", async (onProgress, signal) => {
+      const buffer = await decodeMediaFile(
+        picked.file,
+        (ratio) => onProgress(ratio * 0.45),
+        signal,
+      );
+      if (signal.aborted) throw new DOMException("İptal", "AbortError");
+      onProgress(0.5);
       const sliced = sliceBuffer(buffer, start, end);
-      onProgress(0.3);
+      onProgress(0.55);
 
       if (format === "wav") {
         const blob = encodeWav(sliced);
@@ -71,7 +75,12 @@ export default function AudioTrim({ initialFileId }: ToolProps) {
         return { blob, name: replaceExt(picked.file.name, "wav") };
       }
 
-      const blob = await encodeMp3(sliced, 192, (r) => onProgress(0.3 + r * 0.7));
+      const blob = await encodeMp3(
+        sliced,
+        192,
+        (r) => onProgress(0.55 + r * 0.45),
+        signal,
+      );
       return { blob, name: replaceExt(picked.file.name, "mp3") };
     });
   };
@@ -143,6 +152,7 @@ export default function AudioTrim({ initialFileId }: ToolProps) {
         onRun={startRun}
         runLabel={t("trim.run")}
         disabled={!picked || duration <= 0 || trimDuration < 0.1}
+        onCancel={cancel}
       />
 
       {result && <OutputCard output={result} />}

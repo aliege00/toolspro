@@ -10,22 +10,31 @@ import {
   useToolFile,
 } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
-import { decodeToAudioBuffer, encodeMp3 } from "@/lib/media";
+import { decodeMediaFile, encodeMp3 } from "@/lib/media";
 import { useT } from "@/i18n";
 
 export default function VideoToMp3({ initialFileId }: ToolProps) {
   const t = useT();
   const { picked, choose, clear } = useToolFile(initialFileId, "video/*,audio/*");
   const [kbps, setKbps] = useState<"128" | "192" | "320">("192");
-  const { status, progress, error, result, run } = useRunner();
+  const { status, progress, error, result, run, cancel } = useRunner();
 
   const start = () => {
     if (!picked) return;
-    void run("Video → MP3", async (onProgress) => {
-      const buffer = await decodeToAudioBuffer(picked.file);
-      onProgress(0.12);
-      const blob = await encodeMp3(buffer, Number(kbps), (r) =>
-        onProgress(0.12 + r * 0.88),
+    void run("Video → MP3", async (onProgress, signal) => {
+      // Video dosyalarında WebAudio çözemezse ses FFmpeg ile ayrılır.
+      const buffer = await decodeMediaFile(
+        picked.file,
+        (ratio) => onProgress(ratio * 0.35),
+        signal,
+      );
+      if (signal.aborted) throw new DOMException("İptal", "AbortError");
+      onProgress(0.4);
+      const blob = await encodeMp3(
+        buffer,
+        Number(kbps),
+        (r) => onProgress(0.4 + r * 0.6),
+        signal,
       );
       return { blob, name: replaceExt(picked.file.name, "mp3") };
     });
@@ -63,6 +72,7 @@ export default function VideoToMp3({ initialFileId }: ToolProps) {
         onRun={start}
         runLabel={t("mp3.run")}
         disabled={!picked}
+        onCancel={cancel}
       />
 
       {result && <OutputCard output={result} />}

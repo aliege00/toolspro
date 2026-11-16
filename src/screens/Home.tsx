@@ -176,11 +176,9 @@ export default function Home() {
         transition={{ delay: 0.5 }}
         className="mt-10 flex items-center justify-center gap-1.5 text-[12px] text-ink3"
       >
-        <motion.span
-          className="h-1.5 w-1.5 rounded-full bg-ink3"
-          animate={{ opacity: [0.35, 1, 0.35] }}
-          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
-        />
+        {/* Sürekli yanıp sönen nokta yerine sabit işaret: ekran açıkken boşuna
+            kare çizmez. */}
+        <span className="h-1.5 w-1.5 rounded-full bg-ink3" />
         {t("home.offline")}
       </motion.div>
     </div>

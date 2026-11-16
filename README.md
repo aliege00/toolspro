@@ -30,7 +30,12 @@ yüklenmeden yapılır.
 - **Araçlar**: Video → MP3, ses kırpma (MP3/WAV), görsel sıkıştırma, görsel
   biçim dönüştürme (JPEG/PNG/WebP), ZIP arşivi, SHA-256 parmak izi, video
   bilgisi + codec destek tablosu.
-- **Koyu mod**: Anasayfadaki anahtarla açılıp kapanır, seçim hatırlanır.
+- **Koyu mod ve güç tasarrufu**: Koyu mod anasayfadaki anahtarla, güç
+  tasarrufu Ayarlar'dan açılır; seçimler hatırlanır. Güç tasarrufu sürekli
+  animasyonları ve video küçük kare üretimini durdurur; oynatma, düzenleme ve
+  tüm araçlar çalışmaya devam eder.
+- **Pil dostu oynatma**: Oynatıcı ve editör her karede yeniden çizilmez;
+  kamera taramaları seyreltilir ve uygulama arka plana geçince kamera kapanır.
 - Arayüz sade ve mat; iOS tarzı büyük butonlar; sayfa geçişleri ve liste
   animasyonları Framer Motion ile.
 

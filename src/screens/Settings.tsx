@@ -7,6 +7,7 @@ import { useI18n, useT } from "@/i18n";
 import type { Lang } from "@/i18n";
 import { useNav } from "@/lib/nav";
 import { useTheme } from "@/lib/theme";
+import { usePowerSaver } from "@/lib/power";
 import { clearPin, hasPin, setPin, verifyPin } from "@/lib/security";
 import { formatBytes, formatDate } from "@/lib/files";
 import { isNative } from "@/lib/native";
@@ -51,6 +52,7 @@ export default function Settings() {
   const t = useT();
   const { lang, setLang } = useI18n();
   const { theme, toggle, accent, setAccent } = useTheme();
+  const { saver, setSaver } = usePowerSaver();
   const { pop } = useNav();
   const {
     available: packCatalog,
@@ -179,6 +181,25 @@ export default function Settings() {
               {t("settings.darkMode")}
             </span>
             <Toggle checked={theme === "dark"} onChange={toggle} label={t("settings.darkMode")} />
+          </div>
+        </motion.section>
+
+        <motion.section className="mt-6" {...rise(3)}>
+          <h2 className="mb-2 px-1 text-[13px] font-semibold tracking-wide text-ink2 uppercase">
+            {t("settings.power")}
+          </h2>
+          <div className="flex items-center justify-between gap-3 rounded-[16px] bg-card px-4 py-3.5 shadow-[var(--shadow-card)]">
+            <div className="min-w-0">
+              <p className="text-[16px]">{t("settings.powerSaver")}</p>
+              <p className="mt-0.5 text-[12px] leading-[1.4] text-ink2">
+                {t("settings.powerSaverNote")}
+              </p>
+            </div>
+            <Toggle
+              checked={saver}
+              onChange={(next) => setSaver(next)}
+              label={t("settings.powerSaver")}
+            />
           </div>
         </motion.section>
 

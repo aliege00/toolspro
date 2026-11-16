@@ -176,31 +176,25 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
     video.volume = volume;
   }, [speed, volume, current?.id]);
 
-  // Zaman + altyazı aktualizasyonu
-  useEffect(() => {
-    if (!playing) return;
-    let raf = 0;
-    let last = -1;
-    const tick = () => {
-      const video = videoRef.current;
-      if (video && Math.abs(video.currentTime - last) > 0.08) {
-        last = video.currentTime;
-        setTime(last);
-        if (video.currentTime - lastSave.current > 5 && current) {
-          lastSave.current = video.currentTime;
-          savePos(current, video.currentTime);
-        }
-        if (cues) {
-          const effective = last - subDelay;
-          const cue = cues.find((c) => effective >= c.start && effective <= c.end);
-          setCueText(cue ? cue.text : null);
-        }
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [playing, cues, subDelay, current]);
+  // Zaman + altyazı aktualizasyonu: oynatıcı her karede yeniden çizilmez.
+  // `timeupdate` olayı saniyede ~4 kez gelir; 60 fps'lik bir döngüye göre
+  // CPU/GPU ve pil tüketimini ciddi ölçüde azaltır.
+  const handleTimeUpdate = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const now = video.currentTime;
+    setTime(now);
+    if (now - lastSave.current > 5 && current) {
+      lastSave.current = now;
+      savePos(current, now);
+    }
+    if (cues) {
+      const effective = now - subDelay;
+      const cue = cues.find((c) => effective >= c.start && effective <= c.end);
+      const text = cue ? cue.text : null;
+      setCueText((previous) => (previous === text ? previous : text));
+    }
+  };
 
   useEffect(() => () => window.clearTimeout(hideTimer.current), []);
 
@@ -408,14 +402,10 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
     if (g.mode === "left") {
       const value = Math.min(1, Math.max(0.15, ratio));
       setBrightness(value);
-      const video = videoRef.current;
-      if (video) video.style.filter = value < 1 ? `brightness(${value})` : "";
       showHud("brightness", value);
     } else {
       const value = Math.min(1, Math.max(0, ratio));
       setVolume(value);
-      const video = videoRef.current;
-      if (video) video.volume = value;
       showHud("volume", value);
     }
   };
@@ -525,6 +515,7 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
                 poke();
               }}
               onPause={onPause}
+              onTimeUpdate={handleTimeUpdate}
               onEnded={handleEnded}
               onError={() => setError(t("video.error"))}
             />
@@ -602,7 +593,7 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
-                  className="absolute inset-x-3 top-3 flex items-center justify-between gap-2 rounded-[12px] bg-black/70 px-3 py-2 backdrop-blur-md"
+                  className="absolute inset-x-3 top-3 flex items-center justify-between gap-2 rounded-[12px] bg-black/75 px-3 py-2"
                 >
                   <span className="truncate text-[12.5px] text-white/90">
                     {t("video.resumed")} · {formatDuration(resumeHint)}
@@ -646,7 +637,7 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
                   type="button"
                   whileTap={{ scale: 0.9 }}
                   onClick={togglePlay}
-                  className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md active:bg-white/30"
+                  className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-white active:bg-white/30"
                   aria-label={playing ? t("video.pause") : t("video.play")}
                 >
                   {playing ? <Pause size={30} /> : <Play size={30} className="ml-1" />}
@@ -680,14 +671,14 @@ export default function VideoScreen({ fileId }: { fileId?: string }) {
                     <button
                       type="button"
                       onClick={cycleSpeed}
-                      className="rounded-full bg-white/20 px-2.5 py-1 text-[12px] font-semibold text-white backdrop-blur-md active:bg-white/30"
+                      className="rounded-full bg-white/20 px-2.5 py-1 text-[12px] font-semibold text-white active:bg-white/30"
                     >
                       {speed}x
                     </button>
                     <button
                       type="button"
                       onClick={toggleFullscreen}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-md active:bg-white/30"
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white active:bg-white/30"
                       aria-label={t("video.fullscreen")}
                     >
                       <Expand size={17} />

@@ -35,7 +35,13 @@ export default function ScannerTool(_props: ToolProps) {
   };
 
   useEffect(() => {
+    const onVisibility = () => {
+      // Tarayıcı arka plana geçince kamera akışını kapat: pil ve gizlilik.
+      if (document.visibilityState === "hidden") stopCamera();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
       stopCamera();
       for (const page of pagesRef.current) URL.revokeObjectURL(page.url);
     };
@@ -61,6 +67,8 @@ export default function ScannerTool(_props: ToolProps) {
         setCameraError(t("scanner.unsupported"));
         return;
       }
+      // Önceki oturumdan kalan akış varsa serbest bırak.
+      stopCamera();
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: "environment" },

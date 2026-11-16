@@ -105,11 +105,15 @@ export function pickFiles(opts: PickOptions = {}): Promise<File[]> {
 let thumbCounter = 0;
 
 // Aynı anda birden çok video öğesi açmak Android WebView'de belleği
-// tüketip uygulamayı çökertiyordu. Küçük kareler sıraya alınır (en fazla 2).
-const THUMB_CONCURRENCY = 2;
+// tüketip uygulamayı çökertiyordu. Küçük kareler sıraya alınır (en fazla 1).
+// Tek eşzamanlı iş hem bellek hem de pil tüketimini düşürür.
+const THUMB_CONCURRENCY = 1;
+const THUMB_CACHE_LIMIT = 80;
 let thumbActive = 0;
 const thumbQueue: (() => void)[] = [];
+/** Eski kayıtlar önce düşsün diye Map'in doğal sırası LRU olarak kullanılır. */
 const thumbCache = new Map<string, string>();
+const thumbPending = new Map<string, Promise<string | null>>();
 
 function acquireThumbSlot(): Promise<void> {
   if (thumbActive < THUMB_CONCURRENCY) {
@@ -125,18 +129,48 @@ function releaseThumbSlot(): void {
   else thumbActive = Math.max(0, thumbActive - 1);
 }
 
+function rememberThumb(url: string, data: string): void {
+  thumbCache.delete(url);
+  thumbCache.set(url, data);
+  while (thumbCache.size > THUMB_CACHE_LIMIT) {
+    const oldest = thumbCache.keys().next().value;
+    if (oldest === undefined) break;
+    thumbCache.delete(oldest);
+  }
+}
+
+/** Önbellekteki kareyi beklemeden döndürür (ekran yeniden açıldığında boş kare göstermemek için). */
+export function peekVideoThumb(url: string): string | null {
+  return thumbCache.get(url) ?? null;
+}
+
 /** Videodan küçük kare üretir; üretilemezse null döner. Sonuç önbelleğe alınır. */
 export async function videoThumb(url: string, atSeconds = 1): Promise<string | null> {
   const cached = thumbCache.get(url);
-  if (cached) return cached;
-  await acquireThumbSlot();
-  try {
-    const data = await createVideoThumb(url, atSeconds);
-    if (data) thumbCache.set(url, data);
-    return data;
-  } finally {
-    releaseThumbSlot();
+  if (cached) {
+    // LRU dokunuşu: son kullanılan sona taşınır.
+    thumbCache.delete(url);
+    thumbCache.set(url, cached);
+    return cached;
   }
+  const pending = thumbPending.get(url);
+  if (pending) return pending;
+
+  const job = (async () => {
+    await acquireThumbSlot();
+    try {
+      // Uygulama arka plandayken kare üretmek boşuna pil harcar.
+      if (document.visibilityState === "hidden") return null;
+      const data = await createVideoThumb(url, atSeconds);
+      if (data) rememberThumb(url, data);
+      return data;
+    } finally {
+      releaseThumbSlot();
+      thumbPending.delete(url);
+    }
+  })();
+  thumbPending.set(url, job);
+  return job;
 }
 
 function createVideoThumb(url: string, atSeconds = 1): Promise<string | null> {
@@ -147,26 +181,20 @@ function createVideoThumb(url: string, atSeconds = 1): Promise<string | null> {
     video.preload = "metadata";
     video.src = url;
 
+    let done = false;
     const cleanup = () => {
       video.removeAttribute("src");
       video.load();
     };
-
-    const timer = window.setTimeout(() => {
-      cleanup();
-      resolve(null);
-    }, 8000);
-
-    video.onloadeddata = () => {
-      const total = video.duration;
-      const target =
-        isFinite(total) && total > 0
-          ? Math.min(atSeconds, Math.max(0, total * 0.1))
-          : 0;
-      video.currentTime = target;
-    };
-    video.onseeked = () => {
+    const finish = (data: string | null) => {
+      if (done) return;
+      done = true;
       window.clearTimeout(timer);
+      cleanup();
+      resolve(data);
+    };
+
+    const capture = () => {
       try {
         const width = video.videoWidth || 320;
         const height = video.videoHeight || 180;
@@ -175,25 +203,31 @@ function createVideoThumb(url: string, atSeconds = 1): Promise<string | null> {
         canvas.width = Math.max(1, Math.round(width * scale));
         canvas.height = Math.max(1, Math.round(height * scale));
         const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          cleanup();
-          resolve(null);
-          return;
-        }
+        if (!ctx) return finish(null);
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const data = canvas.toDataURL("image/jpeg", 0.6);
-        cleanup();
-        resolve(data);
+        finish(canvas.toDataURL("image/jpeg", 0.6));
       } catch {
-        cleanup();
-        resolve(null);
+        finish(null);
       }
     };
-    video.onerror = () => {
-      window.clearTimeout(timer);
-      cleanup();
-      resolve(null);
+
+    const timer = window.setTimeout(() => finish(null), 8000);
+
+    video.onloadeddata = () => {
+      const total = video.duration;
+      const target =
+        isFinite(total) && total > 0
+          ? Math.min(atSeconds, Math.max(0, total * 0.1))
+          : 0;
+      // İlk kare zaten hazır: 0'a "seek" olayı çoğu WebView'da tetiklenmez.
+      if (target <= 0.02) {
+        capture();
+        return;
+      }
+      video.currentTime = target;
     };
+    video.onseeked = capture;
+    video.onerror = () => finish(null);
   });
 }
 

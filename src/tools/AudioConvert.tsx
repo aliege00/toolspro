@@ -11,7 +11,7 @@ import {
   useToolFile,
 } from "./ToolFrame";
 import type { ToolProps } from "./ToolFrame";
-import { decodeToAudioBuffer, encodeMp3, encodeWav } from "@/lib/media";
+import { decodeMediaFile, encodeMp3, encodeWav } from "@/lib/media";
 import {
   assertFFmpegAlive,
   execFFmpeg,
@@ -46,7 +46,11 @@ export default function AudioConvert({ initialFileId }: ToolProps) {
     if (!picked) return;
     void run("Ses Dönüştür", async (onProgress, signal) => {
       if (format === "mp3" || format === "wav") {
-        const buffer = await decodeToAudioBuffer(picked.file);
+        const buffer = await decodeMediaFile(
+          picked.file,
+          (ratio) => onProgress(ratio * 0.15),
+          signal,
+        );
         if (signal.aborted) throw new DOMException("İptal", "AbortError");
         onProgress(0.15);
 

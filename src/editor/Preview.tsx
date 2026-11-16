@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Pause, Play } from "@/components/Icons";
+import { Pause, Play, PlusIcon, VideoIcon } from "@/components/Icons";
 import { formatDuration } from "@/lib/files";
 import type { Entry } from "@/lib/library";
 import type { Clip, Project } from "./types";
@@ -133,18 +133,38 @@ function AudioLayer({
 }) {
   const ref = useRef<HTMLAudioElement>(null);
 
+  // Oynat/duraklat yalnızca durum değişince çalışır. Her karede play()
+  // çağırmak ses katmanlarını boğuyor ve CPU/pil tüketiyordu.
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    if (!element.src) element.src = entry.url;
+    if (element.getAttribute("src") !== entry.url) {
+      element.src = entry.url;
+      element.load();
+    }
+    if (playing) void element.play().catch(() => undefined);
+    else element.pause();
+  }, [clip.id, entry.url, playing]);
+
+  // Konum düzeltmesi ve fade ses seviyesi: yalnızca belirgin sapmada seek eder.
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
     const target = sourceTime(clip, playhead);
-    if (Math.abs(element.currentTime - target) > 0.3) element.currentTime = target;
+    if (Number.isFinite(target)) {
+      const drift = Math.abs(element.currentTime - target);
+      if (drift > (playing ? 0.45 : 0.04)) {
+        try {
+          element.currentTime = Math.max(0, target);
+        } catch {
+          /* metadata henüz hazır değil */
+        }
+      }
+    }
     element.volume = muted
       ? 0
       : Math.max(0, Math.min(1, clip.volume * clipGain(clip, playhead)));
-    if (playing) void element.play().catch(() => undefined);
-    else element.pause();
-  }, [clip, entry.url, playhead, playing, muted]);
+  }, [clip, playhead, playing, muted]);
 
   return <audio ref={ref} preload="auto" className="hidden" />;
 }
@@ -165,23 +185,30 @@ function OverlayLayer({
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
-    if (element.src !== entry.url) {
+    if (element.getAttribute("src") !== entry.url) {
       element.src = entry.url;
       element.load();
     }
+    element.playbackRate = Math.max(0.25, Math.min(4, clip.speed));
+    element.muted = clip.volume <= 0;
+    if (playing) void element.play().catch(() => undefined);
+    else element.pause();
+  }, [clip.id, clip.speed, clip.volume, entry.url, playing]);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
     const target = sourceTime(clip, playhead);
-    if (Math.abs(element.currentTime - target) > 0.3) {
+    if (!Number.isFinite(target)) return;
+    const drift = Math.abs(element.currentTime - target);
+    if (drift > (playing ? 0.5 : 0.04)) {
       try {
         element.currentTime = Math.max(0, target);
       } catch {
         /* metadata henüz hazır değil */
       }
     }
-    element.playbackRate = Math.max(0.25, Math.min(4, clip.speed));
-    element.muted = true;
-    if (playing) void element.play().catch(() => undefined);
-    else element.pause();
-  }, [clip, entry.url, playhead, playing]);
+  }, [clip, playhead, playing]);
 
   return (
     <video
@@ -200,6 +227,7 @@ export default function Preview({
   playing,
   selectedClipId,
   onTogglePlay,
+  onAddMedia,
 }: {
   project: Project;
   entries: Entry[];
@@ -207,9 +235,11 @@ export default function Preview({
   playing: boolean;
   selectedClipId: string | null;
   onTogglePlay: () => void;
+  onAddMedia?: () => void;
 }) {
   const t = useEditorT();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isEmpty = project.tracks.every((track) => track.clips.length === 0);
   const mainTrack = mainVideoTrack(project);
   const active = useMemo(
     () => (mainTrack ? clipsAt(mainTrack, playhead)[0] ?? null : null),
@@ -284,11 +314,13 @@ export default function Preview({
   useEffect(() => {
     const element = videoRef.current;
     if (!element || !active || active.kind !== "video") return;
-    if (!playing && active.freezeAt === undefined) return;
     const target = active.freezeAt ?? sourceTime(active, playhead);
-    // Oynarken her karede arama yapmayız; yalnızca zaman çizelgesinde
-    // belirgin bir atlama (veya sürükleyerek arama) olduğunda düzeltiriz.
-    if (Number.isFinite(target) && Math.abs(element.currentTime - target) > 0.7) {
+    if (!Number.isFinite(target)) return;
+    // Oynarken her karede arama yapmayız; yalnızca belirgin bir atlamada
+    // düzeltiriz. Duraklatılmışken ise zaman çizelgesini kaydırmak kareyi
+    // anında güncellemelidir (eski kod bu durumda hiç seek etmiyordu).
+    const drift = Math.abs(element.currentTime - target);
+    if (drift > (playing ? 0.7 : 0.04)) {
       try {
         element.currentTime = Math.max(0, target);
       } catch {
@@ -315,12 +347,40 @@ export default function Preview({
           aspectRatio: project.aspect.replace(":", " / "),
           containerType: "inline-size",
         }}
-        onClick={onTogglePlay}
+        onClick={() => {
+          if (!isEmpty) onTogglePlay();
+        }}
       >
+        {isEmpty && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-6 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-[14px] border border-white/10 bg-white/[0.05] text-white/55">
+              <VideoIcon size={22} />
+            </span>
+            <p className="mt-1.5 text-[13.5px] font-semibold text-white/85">
+              {t("previewEmpty")}
+            </p>
+            <p className="max-w-[240px] text-[11.5px] leading-[1.45] text-white/45">
+              {t("previewEmptyDesc")}
+            </p>
+            {onAddMedia && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onAddMedia();
+                }}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/[0.12] px-3.5 py-2 text-[12px] font-semibold text-white active:bg-white/20"
+              >
+                <PlusIcon size={14} />
+                {t("addMedia")}
+              </button>
+            )}
+          </div>
+        )}
         <div
           className="absolute inset-0"
           style={{
-            opacity: transition.opacity * (active?.kind === "text" ? 1 : fadeGain),
+            opacity: isEmpty ? 0 : transition.opacity * (active?.kind === "text" ? 1 : fadeGain),
             transform: transition.transform,
             filter: transition.filter,
           }}
@@ -463,9 +523,9 @@ export default function Preview({
           </span>
         )}
 
-        {!playing && (
+        {!playing && !isEmpty && (
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white">
               <Play size={20} />
             </span>
           </span>

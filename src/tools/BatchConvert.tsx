@@ -11,7 +11,7 @@ import {
   ToolSection,
   useRunner,
 } from "./ToolFrame";
-import { decodeToAudioBuffer, encodeMp3, processImage } from "@/lib/media";
+import { decodeMediaFile, encodeMp3, processImage } from "@/lib/media";
 import { useT } from "@/i18n";
 
 type Mode = "image" | "audio";
@@ -93,7 +93,7 @@ export default function BatchConvert() {
             );
             entries[name] = new Uint8Array(await blob.arrayBuffer());
           } else {
-            const buffer = await decodeToAudioBuffer(files[i]);
+            const buffer = await decodeMediaFile(files[i], undefined, signal);
             const blob = await encodeMp3(
               buffer,
               Number(kbps),

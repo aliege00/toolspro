@@ -3,41 +3,43 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --bg: #f2f2f7;
+  /* Sıcak nötr, mat yüzeyler: parlak mavi-beyaz yerine kâğıt hissi. */
+  --bg: #f3f2ef;
   --card: #ffffff;
   --card-2: #ffffff;
-  --text: #000000;
-  --text-2: rgba(60, 60, 67, 0.6);
-  --text-3: rgba(60, 60, 67, 0.3);
-  --separator: rgba(60, 60, 67, 0.16);
+  --text: #191817;
+  --text-2: rgba(52, 48, 43, 0.62);
+  --text-3: rgba(52, 48, 43, 0.32);
+  --separator: rgba(52, 48, 43, 0.12);
   --tint: #007aff;
   --tint-2: rgba(0, 122, 255, 0.12);
-  --fill: rgba(120, 120, 128, 0.16);
-  --tile: rgba(118, 118, 128, 0.13);
-  --tile-ink: #6c6c70;
-  --danger: #ff3b30;
-  --success: #34c759;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.07);
+  --fill: rgba(118, 112, 104, 0.14);
+  --tile: rgba(118, 112, 104, 0.11);
+  --tile-ink: #6d6862;
+  --danger: #e3342b;
+  --success: #2f9e4f;
+  --shadow-card: 0 1px 2px rgba(40, 36, 30, 0.04), 0 8px 24px rgba(40, 36, 30, 0.06);
 }
 
 .dark {
+  /* OLED dostu neredeyse siyah zemin; mat sıcak nötr kartlar. */
   --bg: #000000;
-  --card: #1c1c1e;
-  --card-2: #2c2c2e;
-  --text: #ffffff;
-  --text-2: rgba(235, 235, 245, 0.6);
-  --text-3: rgba(235, 235, 245, 0.3);
-  --separator: rgba(84, 84, 88, 0.55);
+  --card: #191817;
+  --card-2: #232120;
+  --text: #f5f2ed;
+  --text-2: rgba(240, 235, 227, 0.62);
+  --text-3: rgba(240, 235, 227, 0.32);
+  --separator: rgba(240, 235, 227, 0.12);
   --tint: #0a84ff;
   --tint-2: rgba(10, 132, 255, 0.2);
-  --fill: rgba(120, 120, 128, 0.28);
-  --tile: rgba(120, 120, 128, 0.2);
-  --tile-ink: #a1a1a6;
+  --fill: rgba(240, 235, 227, 0.14);
+  --tile: rgba(240, 235, 227, 0.1);
+  --tile-ink: #a8a29a;
   --danger: #ff453a;
   --success: #30d158;
   /* Saf siyah zeminde gölge görünmez; kartı ayıran mat bir saç teli halkası eklenir. */
   --shadow-card:
-    0 0 0 0.5px rgba(255, 255, 255, 0.07),
+    0 0 0 0.5px rgba(255, 250, 240, 0.06),
     0 1px 2px rgba(0, 0, 0, 0.5),
     0 10px 30px rgba(0, 0, 0, 0.55);
 }
@@ -124,4 +126,16 @@ button {
 .ios-slider {
   accent-color: var(--tint);
 }
+
+/* Güç tasarrufu: sürekli CSS animasyonları ve geçişler durur.
+   İşlevsel hiçbir şey kaldırılmaz; yalnızca dekoratif hareket azalır. */
+html[data-power="on"] *,
+html[data-power="on"] *::before,
+html[data-power="on"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
 

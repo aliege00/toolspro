@@ -408,19 +408,29 @@ function EditorWorkspace({
   // Uygulama arka plana giderken bekleyen 650 ms'lik kaydı beklemeden yaz.
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === "hidden") persistNow();
+      if (document.visibilityState === "hidden") {
+        persistNow();
+        // Arka planda oynatma döngüsünü sürdürmek boşuna pil harcar.
+        setPlaying(false);
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
     let disposed = false;
     const handles: { remove: () => Promise<void> }[] = [];
     if (Capacitor.isNativePlatform()) {
-      void CapacitorApp.addListener("pause", persistNow).then((handle) => {
+      void CapacitorApp.addListener("pause", () => {
+        persistNow();
+        setPlaying(false);
+      }).then((handle) => {
         if (disposed) void handle.remove();
         else handles.push(handle);
       });
       void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
-        if (!isActive) persistNow();
+        if (!isActive) {
+          persistNow();
+          setPlaying(false);
+        }
       }).then((handle) => {
         if (disposed) void handle.remove();
         else handles.push(handle);
@@ -438,6 +448,7 @@ function EditorWorkspace({
     if (!playing) return;
     let frame = 0;
     let last = performance.now();
+    let lastPaint = 0;
     const total = projectDuration(projectRef.current);
     const tick = (now: number) => {
       const delta = Math.min(0.1, (now - last) / 1000);
@@ -450,7 +461,12 @@ function EditorWorkspace({
         return;
       }
       playheadRef.current = next;
-      setPlayhead(next);
+      // Zaman çizelgesi 30 fps yeterince akıcı; her karede React ağacını
+      // yeniden çizmek (60 fps) editörde belirgin pil tüketiyordu.
+      if (now - lastPaint >= 33) {
+        lastPaint = now;
+        setPlayhead(next);
+      }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -1085,7 +1101,7 @@ function EditorWorkspace({
 
   return (
     <div className="safe-bottom min-h-full pb-6">
-      <header className="safe-top sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur-xl">
+      <header className="safe-top sticky top-0 z-30 border-b border-line bg-bg">
         <div className="flex h-[52px] items-center gap-2 px-3">
           <button
             type="button"
@@ -1139,6 +1155,7 @@ function EditorWorkspace({
         playing={playing}
         selectedClipId={selectedId}
         onTogglePlay={togglePlay}
+        onAddMedia={() => void addMedia()}
       />
 
       <div className="mt-3 px-4">

@@ -302,6 +302,7 @@ export default function FilesScreen() {
                 src={entry.url}
                 alt={entry.name}
                 loading="lazy"
+                decoding="async"
                 className="h-full w-full object-cover"
               />
             </motion.div>
@@ -518,7 +519,13 @@ export default function FilesScreen() {
                           {entry.kind === "video" ? (
                             <Thumb entry={entry} />
                           ) : entry.kind === "image" ? (
-                            <img src={entry.url} alt="" className="h-full w-full object-cover" />
+                            <img
+                              src={entry.url}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                              className="h-full w-full object-cover"
+                            />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center bg-fill text-ink3">
                               <FileIcon size={18} />

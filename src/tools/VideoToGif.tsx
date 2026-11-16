@@ -20,26 +20,47 @@ function loadVideo(url: string): Promise<SeekVideo> {
     video.playsInline = true;
     video.preload = "auto";
     video.src = url;
-    const timer = window.setTimeout(() => reject(new Error("timeout")), 20000);
+    const fail = (reason: string) => {
+      window.clearTimeout(timer);
+      video.onloadeddata = null;
+      video.onerror = null;
+      video.removeAttribute("src");
+      video.load();
+      reject(new Error(reason));
+    };
+    const timer = window.setTimeout(() => fail("timeout"), 20000);
     video.onloadeddata = () => {
       window.clearTimeout(timer);
       resolve(video);
     };
-    video.onerror = () => {
-      window.clearTimeout(timer);
-      reject(new Error("load"));
-    };
+    video.onerror = () => fail("load");
   });
 }
 
 function seekTo(video: SeekVideo, time: number): Promise<void> {
+  const target = Math.max(0, time);
+  // Hedef zaten geçerli kare ise `seeked` olayı hiç gelmez; beklemek
+  // GIF üretimini kilitliyordu (özellikle 0. saniyede).
+  if (Math.abs(video.currentTime - target) < 0.02) return Promise.resolve();
   return new Promise((resolve) => {
-    const handler = () => {
-      video.removeEventListener("seeked", handler);
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      window.clearTimeout(timer);
+      video.removeEventListener("seeked", finish);
+      video.removeEventListener("error", finish);
       resolve();
     };
-    video.addEventListener("seeked", handler);
-    video.currentTime = time;
+    // Bozuk bir kaynak seek olayını hiç tetiklemeyebilir; 4 sn sonra devam et.
+    const timer = window.setTimeout(finish, 4000);
+    video.addEventListener("seeked", finish);
+    video.addEventListener("error", finish);
+    try {
+      video.currentTime = target;
+    } catch {
+      finish();
+    }
   });
 }
 
@@ -49,57 +70,61 @@ export default function VideoToGif({ initialFileId }: ToolProps) {
   const [fps, setFps] = useState<"5" | "10" | "15">("10");
   const [width, setWidth] = useState<"240" | "360" | "480">("360");
   const [seconds, setSeconds] = useState(3);
-  const { status, progress, error, result, run } = useRunner();
+  const { status, progress, error, result, run, cancel } = useRunner();
 
   const start = () => {
     if (!picked) return;
-    void run("Video → GIF", async (onProgress) => {
+    void run("Video → GIF", async (onProgress, signal) => {
       const { GIFEncoder, quantize, applyPalette } = await import("gifenc");
       const video = await loadVideo(picked.url);
-      const duration = video.duration || seconds;
+      try {
+        const duration = video.duration || seconds;
 
-      const targetWidth = Number(width);
-      const scale = targetWidth / (video.videoWidth || targetWidth);
-      const w = Math.max(1, Math.round((video.videoWidth || targetWidth) * scale));
-      const h = Math.max(
-        1,
-        Math.round((video.videoHeight || Math.round(targetWidth * 0.75)) * scale),
-      );
+        const targetWidth = Number(width);
+        const scale = targetWidth / (video.videoWidth || targetWidth);
+        const w = Math.max(1, Math.round((video.videoWidth || targetWidth) * scale));
+        const h = Math.max(
+          1,
+          Math.round((video.videoHeight || Math.round(targetWidth * 0.75)) * scale),
+        );
 
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("canvas");
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("canvas");
 
-      const rate = Number(fps);
-      const length = Math.min(seconds, duration || seconds);
-      const count = Math.max(1, Math.min(150, Math.round(length * rate)));
-      const delayMs = Math.round(1000 / rate);
+        const rate = Number(fps);
+        const length = Math.min(seconds, duration || seconds);
+        const count = Math.max(1, Math.min(150, Math.round(length * rate)));
+        const delayMs = Math.round(1000 / rate);
 
-      const gif = GIFEncoder();
+        const gif = GIFEncoder();
 
-      for (let i = 0; i < count; i += 1) {
-        const time = Math.min(Math.max(0, duration - 0.05), (i / rate));
-        await seekTo(video, time);
-        ctx.drawImage(video, 0, 0, w, h);
-        const image = ctx.getImageData(0, 0, w, h);
-        const palette = quantize(image.data, 256, { format: "rgb565" });
-        const index = applyPalette(image.data, palette[0], "rgb565");
-        gif.writeFrame(index, w, h, { palette: palette[0], delay: delayMs });
-        onProgress((i + 1) / (count + 1));
-        await new Promise((r) => setTimeout(r, 0));
+        for (let i = 0; i < count; i += 1) {
+          if (signal.aborted) throw new DOMException("İşlem iptal edildi.", "AbortError");
+          const time = Math.min(Math.max(0, duration - 0.05), (i / rate));
+          await seekTo(video, time);
+          ctx.drawImage(video, 0, 0, w, h);
+          const image = ctx.getImageData(0, 0, w, h);
+          const palette = quantize(image.data, 256, { format: "rgb565" });
+          const index = applyPalette(image.data, palette[0], "rgb565");
+          gif.writeFrame(index, w, h, { palette: palette[0], delay: delayMs });
+          onProgress((i + 1) / (count + 1));
+          await new Promise((r) => setTimeout(r, 0));
+        }
+
+        gif.finish();
+        const bytes = gif.bytes();
+        onProgress(1);
+        return {
+          blob: new Blob([bytes as unknown as BlobPart], { type: "image/gif" }),
+          name: `${picked.file.name.replace(/\.[^.]+$/, "")}.gif`,
+        };
+      } finally {
+        video.removeAttribute("src");
+        video.load();
       }
-
-      gif.finish();
-      const bytes = gif.bytes();
-      video.removeAttribute("src");
-      video.load();
-      onProgress(1);
-      return {
-        blob: new Blob([bytes as unknown as BlobPart], { type: "image/gif" }),
-        name: `${picked.file.name.replace(/\.[^.]+$/, "")}.gif`,
-      };
     });
   };
 
@@ -156,6 +181,7 @@ export default function VideoToGif({ initialFileId }: ToolProps) {
         onRun={start}
         runLabel={t("gif.run")}
         disabled={!picked}
+        onCancel={cancel}
       />
 
       {result && <OutputCard output={result} />}

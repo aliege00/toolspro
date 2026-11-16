@@ -322,7 +322,7 @@ export function NavBar({
 }) {
   const t = useT();
   return (
-    <header className="safe-top sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur-xl">
+    <header className="safe-top sticky top-0 z-30 border-b border-line bg-bg">
       <div className="flex h-[52px] items-center gap-2 px-4">
         <div className="flex min-w-[64px] items-center">
           {onBack && (
